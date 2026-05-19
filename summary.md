@@ -99,7 +99,9 @@ src/
       LegoBrick, PaletteBrick, DragGhostBrick, StudRow, Plate, FracInline
       Caption, Fraction, shade
     lesson/
-      LessonPage.tsx         # state machine + branching wiring
+      LessonPage.tsx         # ~130 lines — composition only, wires the hooks below
+      LessonBeatCell.tsx     # per-beat cell (prose + manipulative + MC + bubbles)
+      ManipulativeSlot.tsx   # dispatch by manipulative.kind → ChocolateBar / Pizza / Paper / BlockStudio / FractionBox
       NamePrompt.tsx         # student-name capture, persists to localStorage
       Cell, Prose, MCBlock, StudentEcho
       HintBubble, CelebrationBubble
@@ -118,6 +120,10 @@ src/
       branching.ts           # pure rulebook — reactToMC / shouldScaffold / advance
       validators.ts          # validateMC / validateManipulative (all 4 kinds)
       lessonPersistence.ts   # localStorage snapshot + isManipulativeState guard
+      phaseLabel.ts          # LessonPhase → "P1 · introduce" label
+      useLessonStateMachine.ts  # state + handleMC / handleManip / advanceTo
+      useLessonVoice.ts      # speakAri + mute + mount-time voice + resume scroll
+      useLessonPersistence.ts   # snapshot effect + beforeunload backstop
       stripMarkup.ts, completes.ts, fractions.ts, titleCaseName.ts
       manipSummary.ts        # short label for each manipulative state
       useReveal.ts, useScrollProgress.ts

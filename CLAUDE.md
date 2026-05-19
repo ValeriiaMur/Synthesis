@@ -9,6 +9,10 @@
 - **One component per file.** Each React component lives in its own file, named after the component (e.g. `Button.tsx` exports `Button`).
 - Co-locate the component's tests and styles next to it (`Button.tsx`, `Button.test.tsx`).
 
+## Module size
+- Target ≤150 lines per file; hard cap ~300. Past the cap, extract presentational sub-components, custom hooks, or pure helpers.
+- A React component file does one thing: render. Effects, persistence, and state-machine logic move to `use*` hooks; dispatch tables and pure transforms move to `lib/`.
+
 ## Testing — TDD (red → green)
 - **Red first.** Write the failing test before the implementation. Run it, confirm it fails for the right reason.
 - **Green.** Write the minimum code to make the test pass.

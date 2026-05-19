@@ -104,6 +104,10 @@ const STORAGE_KEY = 'synthesis:ambient:muted';
 export const AMBIENT_SRC = '/audio/ambient.mp3';
 
 function defaultStorage(): AmbientPlayerDeps['storage'] {
+  // sessionStorage (not localStorage) — mute preference is scoped to the
+  // browser tab/session. A fresh tab starts with the default (unmuted)
+  // so the kid doesn't inherit a silent landing from some past visit;
+  // within the session, the toggle sticks across navigation and reload.
   return {
     get: () => {
       // Default unmuted. Browsers will block autoplay until the user
@@ -111,7 +115,7 @@ function defaultStorage(): AmbientPlayerDeps['storage'] {
       // retries playback then.
       if (typeof window === 'undefined') return false;
       try {
-        const v = window.localStorage.getItem(STORAGE_KEY);
+        const v = window.sessionStorage.getItem(STORAGE_KEY);
         return v === null ? false : v === '1';
       } catch {
         return false;
@@ -120,7 +124,7 @@ function defaultStorage(): AmbientPlayerDeps['storage'] {
     set: (muted) => {
       if (typeof window === 'undefined') return;
       try {
-        window.localStorage.setItem(STORAGE_KEY, muted ? '1' : '0');
+        window.sessionStorage.setItem(STORAGE_KEY, muted ? '1' : '0');
       } catch {
         // ignore — quota / disabled
       }

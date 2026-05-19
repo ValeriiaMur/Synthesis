@@ -1,0 +1,116 @@
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+  type RefObject,
+} from 'react';
+import type { Beat } from './types';
+import { stripMarkup } from './stripMarkup';
+import { getVoicePlayer } from '@/lib/voice/voicePlayer';
+
+export type UseLessonVoiceResult = {
+  /** Defers `voice.speak` through a double-rAF so React commits + paints
+   *  before audio starts fetching. The voice player itself is FIFO. */
+  readonly speakAri: (text: string) => void;
+  readonly muted: boolean;
+  readonly toggleMuted: () => void;
+};
+
+/**
+ * Owns the lesson's voice channel:
+ *  - exposes `speakAri` (reveal-gated via double-rAF) + mute controls
+ *  - on mount: clears the queue and speaks the active beat's prose, with
+ *    a one-time Spirit intro on a fresh start (activeIdx === 0)
+ *  - on a *restored* mount (activeIdx !== 0): scrolls the active cell to
+ *    the top of the notebook after 200ms so the manipulative has time to
+ *    settle before we measure
+ *
+ * The mount voice effect manages its own rAF chain locally (cancellable
+ * in cleanup) instead of routing through speakAri — under React
+ * StrictMode the effect runs twice and a non-cancellable double-rAF would
+ * queue the prose twice. Other speakAri sites (advance, MC reactions)
+ * fire from event handlers and aren't affected by the remount path.
+ */
+export function useLessonVoice(
+  initialActiveIdx: number,
+  beats: readonly Beat[],
+  studentName: string,
+  activeCellRef: RefObject<HTMLDivElement | null>,
+): UseLessonVoiceResult {
+  const voice = useMemo(() => getVoicePlayer(), []);
+
+  const speakAri = useCallback(
+    (text: string) => {
+      if (typeof window === 'undefined') {
+        voice.speak(text);
+        return;
+      }
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          voice.speak(text);
+        });
+      });
+    },
+    [voice],
+  );
+
+  const muted = useSyncExternalStore(
+    voice.subscribe,
+    voice.isMuted,
+    () => false,
+  );
+  const toggleMuted = useCallback(
+    () => voice.setMuted(!voice.isMuted()),
+    [voice],
+  );
+
+  // Capture mount-time values in refs so the effect's empty-deps semantics
+  // hold even when the parent re-renders.
+  const initialActiveIdxRef = useRef(initialActiveIdx);
+  const initialBeatsRef = useRef(beats);
+  const initialStudentNameRef = useRef(studentName);
+
+  useEffect(() => {
+    voice.stop();
+    const idx = initialActiveIdxRef.current;
+    const startBeat = initialBeatsRef.current[idx];
+    if (!startBeat || typeof window === 'undefined') {
+      return () => {
+        voice.stop();
+      };
+    }
+    const text = stripMarkup(startBeat.prose);
+    const intro =
+      idx === 0
+        ? `Hi ${initialStudentNameRef.current}, I'm Ari. We're flying the Spirit today — four stops, then home.`
+        : null;
+    let raf2 = 0;
+    const raf1 = window.requestAnimationFrame(() => {
+      raf2 = window.requestAnimationFrame(() => {
+        if (intro) voice.speak(intro);
+        voice.speak(text);
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(raf1);
+      if (raf2) window.cancelAnimationFrame(raf2);
+      voice.stop();
+    };
+  }, [voice]);
+
+  const initialCellRefRef = useRef(activeCellRef);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (initialActiveIdxRef.current === 0) return;
+    const id = window.setTimeout(() => {
+      const target = initialCellRefRef.current?.current;
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'auto', block: 'start' });
+    }, 200);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  return { speakAri, muted, toggleMuted };
+}

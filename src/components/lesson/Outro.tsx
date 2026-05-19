@@ -3,9 +3,27 @@ export type OutroProps = {
 };
 
 /**
- * Closing card. While the trip is in progress, a quiet caption nudges the
- * pilot forward. When all six cells are done, the warp-drive lights up and
- * we celebrate ½ = ²⁄₄ — same amount, told four different ways.
+ * Past-tense, descriptive log of what the kid did at each of the six stops.
+ * One line per beat, numbered, no praise, no badges. The closing line names
+ * the pattern the kid uncovered without telling them they "did great" —
+ * the discovery is the reward (Montessori principle 04: description, not
+ * praise; principle 07: aesthetic minimalism). The story-card / green-pill
+ * / gradient celebration treatment was removed to keep the close from
+ * reading like a video-game "achievement unlocked".
+ */
+const ENTRIES: readonly { readonly idx: string; readonly text: string }[] = [
+  { idx: '01', text: 'Tray loaded — 2 quarter-squares filled half the bar.' },
+  { idx: '02', text: 'Logged — 2 squares on the half-tray.' },
+  { idx: '03', text: 'Pizza cut — 2 halves became 4 slices.' },
+  { idx: '04', text: 'Share confirmed — 2 slices covered 1 half.' },
+  { idx: '05', text: 'Star-map folded — 1 half held 2 quarters.' },
+  { idx: '06', text: 'Warp-lock built — 1 whole, two ways.' },
+];
+
+/**
+ * Closing block. While the trip is in progress, a quiet caption nudges the
+ * pilot forward. When all six cells are done, the mission log replaces it —
+ * a calm, descriptive recap of what the kid actually did at each stop.
  */
 export function Outro({ done }: OutroProps) {
   if (!done) {
@@ -28,12 +46,8 @@ export function Outro({ done }: OutroProps) {
   return (
     <div
       style={{
-        marginTop: 8,
-        padding: '32px 30px',
-        borderRadius: 22,
-        background:
-          'linear-gradient(135deg, rgba(95,216,151,0.10), rgba(91,140,255,0.10))',
-        border: '1px solid rgba(95,216,151,0.3)',
+        marginTop: 48,
+        padding: '8px 30px 56px',
         textAlign: 'center',
       }}
     >
@@ -41,36 +55,70 @@ export function Outro({ done }: OutroProps) {
         style={{
           fontFamily: 'var(--font-jetbrains-mono), JetBrains Mono, monospace',
           fontSize: 11,
-          letterSpacing: '0.14em',
-          color: 'var(--green)',
+          letterSpacing: '0.22em',
+          color: 'var(--ink-mute)',
           textTransform: 'uppercase',
+          marginBottom: 32,
         }}
       >
-        ✦ warp-drive online · spirit homeward
+        delivery manifest · spirit
       </div>
-      <div
+      <ol
         style={{
-          fontSize: 'clamp(24px, 3.6vw, 32px)',
-          fontWeight: 300,
-          margin: '10px 0 6px',
-        }}
-      >
-        <span style={{ color: 'var(--red)' }}>½</span>
-        <span style={{ margin: '0 14px', color: 'var(--ink-mute)' }}>=</span>
-        <span style={{ color: 'var(--blue)' }}>²⁄₄</span>
-      </div>
-      <div
-        style={{
-          color: 'var(--ink-soft)',
-          fontSize: 16,
-          fontWeight: 300,
-          maxWidth: 480,
+          listStyle: 'none',
+          padding: 0,
           margin: '0 auto',
+          maxWidth: 560,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 14,
+          textAlign: 'left',
         }}
       >
-        Same amount — told four different ways: a ration bar, a moon-pizza, a
-        folded star-map, a row of bricks. The lock knew them all. Equivalent
-        fractions are just one amount with more than one name.
+        {ENTRIES.map((entry) => (
+          <li
+            key={entry.idx}
+            style={{
+              display: 'flex',
+              gap: 18,
+              alignItems: 'baseline',
+            }}
+          >
+            <span
+              style={{
+                fontFamily:
+                  'var(--font-jetbrains-mono), JetBrains Mono, monospace',
+                fontSize: 11,
+                letterSpacing: '0.16em',
+                color: 'var(--ink-faint)',
+                minWidth: 28,
+                flexShrink: 0,
+              }}
+            >
+              {entry.idx}
+            </span>
+            <span
+              style={{
+                fontSize: 15,
+                color: 'var(--ink-soft)',
+                fontWeight: 300,
+                lineHeight: 1.55,
+              }}
+            >
+              {entry.text}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <div
+        style={{
+          marginTop: 36,
+          fontSize: 16,
+          color: 'var(--ink)',
+          fontWeight: 300,
+        }}
+      >
+        Same amount, every stop.
       </div>
     </div>
   );

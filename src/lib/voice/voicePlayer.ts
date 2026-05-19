@@ -128,11 +128,15 @@ export function createVoicePlayer(deps: VoicePlayerDeps): VoicePlayer {
 const MUTE_STORAGE_KEY = 'synthesis:voice:muted';
 
 function defaultStorage(): VoicePlayerDeps['storage'] {
+  // sessionStorage (not localStorage) — mute preference is scoped to the
+  // browser tab/session. A fresh tab starts unmuted so the kid hears Ari
+  // by default; within the session, the toggle sticks across reload and
+  // route changes.
   return {
     get: () => {
       if (typeof window === 'undefined') return false;
       try {
-        return window.localStorage.getItem(MUTE_STORAGE_KEY) === '1';
+        return window.sessionStorage.getItem(MUTE_STORAGE_KEY) === '1';
       } catch {
         return false;
       }
@@ -140,7 +144,7 @@ function defaultStorage(): VoicePlayerDeps['storage'] {
     set: (muted) => {
       if (typeof window === 'undefined') return;
       try {
-        window.localStorage.setItem(MUTE_STORAGE_KEY, muted ? '1' : '0');
+        window.sessionStorage.setItem(MUTE_STORAGE_KEY, muted ? '1' : '0');
       } catch {
         // ignore — quota / disabled
       }

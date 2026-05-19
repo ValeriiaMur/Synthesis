@@ -411,13 +411,15 @@ input {
 }
 
 /* ----------- top bar -----------
-   The 44px icon buttons need clearance from the viewport top so they
-   don't sit flush against browser/system chrome and look clipped. We
-   give the bar 80px of total height (44px button + 18px above + 18px
-   below) and the .stage offset below matches. */
+   Sits 16px below the viewport top so the 44px icon buttons + lesson
+   tag have visible cosmos above them — they shouldn't crash into the
+   browser/OS chrome (macOS title bar, mobile status bar, address bar).
+   The bar itself is 80px tall (44px button + ~18px above + ~18px
+   below) and the .stage offset below = top + height = 96px so the
+   notebook still lives directly underneath the bar. */
 .topbar {
   position: absolute;
-  top: 0;
+  top: 16px;
   left: 0;
   right: 0;
   height: 80px;
@@ -521,11 +523,20 @@ input {
    them at the moment. */
 .stage {
   position: absolute;
-  top: 80px;
+  /* 16 (topbar offset) + 80 (topbar height). */
+  top: 96px;
   left: 0;
   right: 0;
   bottom: 0;
   display: block;
+  /* Persistent gap between the topbar and the scrolling notebook.
+     The notebook's own padding-top scrolls AWAY with the content, so
+     once the kid scrolls down the first cell would butt right up
+     against the topbar. This padding sits OUTSIDE the scroll container
+     (box-sizing: border-box keeps .notebook's height: 100% honest),
+     so the gap stays visible at any scroll position. */
+  padding-top: 16px;
+  box-sizing: border-box;
 }
 
 .notebook {
@@ -593,7 +604,11 @@ input {
 }
 
 .notebook-inner {
-  max-width: 1080px;
+  /* Widened from 1080px → 1280px so cells span more of the page on
+     wide-ish desktops. Tablet (landscape iPad) and mobile rules below
+     drop the cap entirely so cells run nearly edge-to-edge with just
+     the notebook's side padding for breathing room. */
+  max-width: 1280px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -1788,10 +1803,15 @@ input {
 }
 
 /* Landscape iPad — single column stays. Trim notebook padding so prose
-   doesn't crash into the edges on narrow landscape widths. */
+   doesn't crash into the edges on narrow landscape widths. Drop the
+   inner max-width so cells span the full notebook content area with
+   just the notebook's side padding for breathing room. */
 @media (min-aspect-ratio: 1/1) and (max-width: 1280px) {
   .notebook {
     padding: 24px 36px 180px 36px;
+  }
+  .notebook-inner {
+    max-width: 100%;
   }
 }
 
@@ -1805,11 +1825,17 @@ input {
    Shrink letter-spacing first, then drop the textual tag on phones. */
 @media (max-width: 900px) {
   .topbar {
+    /* Smaller offset on phones — system chrome already eats some
+       vertical space, so 12px is enough breathing room. */
+    top: 12px;
     padding: 12px 18px 0 18px;
     height: 72px;
   }
   .stage {
-    top: 72px;
+    /* 12 (topbar offset) + 72 (topbar height). */
+    top: 84px;
+    /* Mirror the desktop gap, scaled to the smaller bar. */
+    padding-top: 12px;
   }
   .lesson-tag {
     font-size: 11px;
