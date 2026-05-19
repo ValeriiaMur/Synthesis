@@ -8,6 +8,10 @@ cosmos delivery (the "Spirit run") for a 7–10 year old on an iPad.
 - **Companion route:** `/` — "How It Works", an adult-facing one-pager
   on the eight Montessori principles behind the lesson.
 
+<img width="928" height="895" alt="Screenshot 2026-05-19 at 4 31 08 PM" src="https://github.com/user-attachments/assets/af67a798-9bc1-4df1-bd96-a191fc22d749" />
+<img width="848" height="893" alt="Screenshot 2026-05-19 at 4 29 44 PM" src="https://github.com/user-attachments/assets/a5f2d1eb-38e7-42df-8953-3af1ed3e1509" />
+
+
 ## What it is
 
 - **Chat-style tutor, scripted.** Each cell in the vertical notebook is
