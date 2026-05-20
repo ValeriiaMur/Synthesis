@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 import { lesson } from '../src/lib/lesson/lessonData.ts';
 import { stripMarkup } from '../src/lib/lesson/stripMarkup.ts';
+import { personalizeProse } from '../src/lib/lesson/personalize.ts';
 import { SAMPLE_GREETING } from '../src/lib/voice/sampleGreeting.ts';
 import { synthesizeSpeech } from '../src/lib/voice/elevenLabsClient.ts';
 
@@ -32,7 +33,12 @@ function collectTexts(): readonly string[] {
     texts.push(trimmed);
   };
   push(SAMPLE_GREETING);
-  for (const beat of lesson.beats) push(beat.prose);
+  // Bake the empty-name baseline of each line. The {name} token resolves to
+  // a learner's name only at runtime, so personalized lines can't be baked
+  // ahead of time — they fall back to live /api/tts (the manifest-miss path).
+  // For un-tokenized beats this is a no-op, so their existing audio still
+  // matches by hash.
+  for (const beat of lesson.beats) push(personalizeProse(beat.prose, ''));
   return texts;
 }
 

@@ -11,6 +11,7 @@ import type { PersistedLessonState } from '@/lib/lesson/lessonPersistence';
 import { useLessonStateMachine } from '@/lib/lesson/useLessonStateMachine';
 import { useLessonVoice } from '@/lib/lesson/useLessonVoice';
 import { useLessonPersistence } from '@/lib/lesson/useLessonPersistence';
+import { personalizeLesson } from '@/lib/lesson/personalize';
 
 export type LessonPageProps = {
   readonly lesson: Lesson;
@@ -35,9 +36,18 @@ type CellStatus = 'locked' | 'active' | 'done';
  */
 export function LessonPage({
   lesson,
+  studentName = '',
   initialState = null,
 }: LessonPageProps) {
-  const beats = lesson.beats;
+  // Resolve the {name} token in every beat's prose once, here, so the
+  // on-screen text and both voice paths (mount in useLessonVoice, advance in
+  // useLessonStateMachine) all read from the same personalized beats. Lesson
+  // id is unchanged, so persistence is unaffected.
+  const personalized = useMemo(
+    () => personalizeLesson(lesson, studentName),
+    [lesson, studentName],
+  );
+  const beats = personalized.beats;
   const beatCount = beats.length;
 
   const cellRefs = useMemo<readonly RefObject<HTMLDivElement | null>[]>(
@@ -114,7 +124,7 @@ export function LessonPage({
             <LessonTrail allDone={allDone} />
 
             <div ref={outroRef}>
-              <Outro done={allDone} />
+              <Outro done={allDone} studentName={studentName} />
             </div>
           </div>
         </div>

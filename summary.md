@@ -23,6 +23,20 @@ by default*: ElevenLabs TTS plays the beat's prose on entry, and that's it.
 No celebration lines, no per-wrong hints, no scaffolded MC variants — the
 material itself is the feedback (Montessori control-of-error).
 
+**Learner name in the prose.** The child's name is collected by `NamePrompt`,
+title-cased ([`titleCaseName`](src/lib/lesson/titleCaseName.ts)), and stored in
+`localStorage`. Beat prose may carry a single inline `{name}` token — used
+light-touch: a greeting on `whole_intro` ("This is one whole, {name}.") and the
+direct address on `recall_name` ("What is this, {name}?"). `LessonPage` resolves
+the token *once* via `personalizeLesson` (built on `personalizeProse` in
+[`personalize.ts`](src/lib/lesson/personalize.ts)) before handing the beats to
+the cell renderer **and** both voice paths, so the on-screen line and the spoken
+line are always identical. With no name, the token and its leading comma are
+excised, leaving the original un-named sentence — so an absent name degrades to
+the prior copy rather than a dangling artifact. The `Outro` likewise greets the
+child by name in its finished state ("Nice work, {name} — …") and falls back to
+the un-named heading when no name is present.
+
 Two UI routes, one visual system (cosmos / space palette in
 [globals.css](src/app/globals.css)):
 
@@ -254,8 +268,13 @@ prose changes — the script skips entries whose hash + file are already on
 disk, so re-runs only pay ElevenLabs for new or edited lines. Lines that
 aren't in the manifest (e.g. a new beat added without re-baking) silently
 fall back to `/api/tts`, so dev never blocks on the bake step. Source of
-truth for baked texts: `lesson.beats[].prose` (stripped of markup) plus
-`SAMPLE_GREETING` from `sampleGreeting.ts`.
+truth for baked texts: the **empty-name baseline** of each beat —
+`personalizeProse(lesson.beats[].prose, '')` (stripped of markup) — plus
+`SAMPLE_GREETING` from `sampleGreeting.ts`. Baking the empty-name baseline
+keeps token-free lines byte-identical to before (so their audio still matches
+by hash) and never bakes a literal `{name}`. Personalized lines can't be baked
+ahead of time — a learner's actual name only exists at runtime — so once a name
+is set those two lines take the manifest-miss path and stream from `/api/tts`.
 
 Design contract:
 

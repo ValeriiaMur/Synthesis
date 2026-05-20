@@ -54,6 +54,20 @@ describe('LessonPage — Phase 1 voice + persistence', () => {
     expect(spoken).toContain('This is one whole. Tap to split it in half.');
   });
 
+  it('personalizes the first beat prose with the student name on the voice path', async () => {
+    await act(async () => {
+      render(<LessonPage lesson={lesson} studentName="Lera" />);
+    });
+    await act(async () => {
+      await flush(60);
+    });
+
+    const spoken = speakMock.mock.calls.map((c) => String(c[0]));
+    // The {name} token resolves once at the LessonPage level, so the spoken
+    // line matches the on-screen prose.
+    expect(spoken).toContain('This is one whole, Lera. Tap to split it in half.');
+  });
+
   it('stops the voice queue when LessonPage unmounts', async () => {
     const { unmount } = render(<LessonPage lesson={lesson} />);
     await act(async () => {

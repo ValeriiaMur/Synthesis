@@ -26,7 +26,7 @@ export const lesson: Lesson = {
       id: 'whole_intro',
       phase: 'period_1_introduce',
       kindLabel: 'one whole',
-      prose: 'This is one whole. Tap to split it in half.',
+      prose: 'This is one whole, {name}. Tap to split it in half.',
       manipulative: { kind: 'whole' },
     },
     {
@@ -54,7 +54,7 @@ export const lesson: Lesson = {
       id: 'recall_name',
       phase: 'period_3_recall',
       kindLabel: 'what is this?',
-      prose: 'What is this? Say it out loud — then show me.',
+      prose: 'What is this, {name}? Say it out loud — then show me.',
       manipulative: { kind: 'recall', fraction: 'half' },
     },
     {

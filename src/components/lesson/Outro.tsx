@@ -3,9 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { captureEvent } from '@/lib/analytics/posthog';
+import { titleCaseName } from '@/lib/lesson/titleCaseName';
 
 export type OutroProps = {
   readonly done: boolean;
+  /** Learner's name, used for a warm greeting in the finished state.
+   *  Optional / empty falls back to the un-named closing copy. */
+  readonly studentName?: string;
 };
 
 type Feedback = 'loved' | 'ok' | 'tricky';
@@ -29,8 +33,9 @@ const FEEDBACK_OPTIONS: readonly { readonly id: Feedback; readonly label: string
  * scores). It's captured in local state only — there's no backend in
  * this build — and acknowledged with a quiet "thanks".
  */
-export function Outro({ done }: OutroProps) {
+export function Outro({ done, studentName = '' }: OutroProps) {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const name = titleCaseName(studentName);
 
   if (!done) {
     return (
@@ -85,7 +90,8 @@ export function Outro({ done }: OutroProps) {
           maxWidth: 620,
         }}
       >
-        You split a whole into halves, named the quarters, and saw that{' '}
+        {name ? `Nice work, ${name} — you ` : 'You '}
+        split a whole into halves, named the quarters, and saw that{' '}
         <span style={{ color: 'var(--green)' }}>
           four quarters make one whole
         </span>
