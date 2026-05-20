@@ -1,28 +1,33 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
-let resolveSample: (() => void) | null = null;
-let rejectSample: ((e: Error) => void) | null = null;
-const playSampleMock = vi.fn<(text: string) => Promise<void>>();
+let resolveSetMuted: (() => void) | null = null;
+let rejectSetMuted: ((e: Error) => void) | null = null;
+const setMutedMock = vi.fn<(muted: boolean) => Promise<void>>();
 
-vi.mock('@/lib/voice/playSample', () => ({
-  playSampleVoice: (text: string) => playSampleMock(text),
-  SAMPLE_GREETING: "Hi, I'm Ari — can you hear me?",
+vi.mock('@/lib/audio/ambientPlayer', () => ({
+  getAmbientPlayer: () => ({
+    setMuted: (muted: boolean) => setMutedMock(muted),
+    isMuted: () => true,
+    start: vi.fn().mockResolvedValue(undefined),
+    pause: vi.fn(),
+    subscribe: () => () => {},
+  }),
 }));
 
 import { NamePrompt } from './NamePrompt';
 
 beforeEach(() => {
-  playSampleMock.mockReset();
-  playSampleMock.mockImplementation(
+  setMutedMock.mockReset();
+  setMutedMock.mockImplementation(
     () =>
       new Promise<void>((resolve, reject) => {
-        resolveSample = resolve;
-        rejectSample = reject;
+        resolveSetMuted = resolve;
+        rejectSetMuted = reject;
       }),
   );
-  resolveSample = null;
-  rejectSample = null;
+  resolveSetMuted = null;
+  rejectSetMuted = null;
 });
 
 describe('NamePrompt', () => {
@@ -32,6 +37,12 @@ describe('NamePrompt', () => {
     expect(
       screen.getByRole('button', { name: /start|go|begin/i }),
     ).toBeInTheDocument();
+  });
+
+  it('uses neutral copy — no "Ari" or "story" anywhere', () => {
+    const { container } = render(<NamePrompt onSubmit={() => {}} />);
+    expect(container.textContent).not.toMatch(/\bAri\b/);
+    expect(container.textContent ?? '').not.toMatch(/story/i);
   });
 
   it('starts with a sound-check button and the name field disabled', () => {
@@ -45,25 +56,25 @@ describe('NamePrompt', () => {
     ).toBeDisabled();
   });
 
-  it('calls playSampleVoice with the greeting when the sound check is clicked', async () => {
+  it('unmutes the ambient player when the sound check is clicked', () => {
     render(<NamePrompt onSubmit={() => {}} />);
     fireEvent.click(
       screen.getByRole('button', { name: /play (a )?sound|test sound|hear/i }),
     );
-    expect(playSampleMock).toHaveBeenCalledWith("Hi, I'm Ari — can you hear me?");
+    expect(setMutedMock).toHaveBeenCalledWith(false);
   });
 
-  it('reveals the "I hear it" confirm button after the sample finishes playing', async () => {
+  it('reveals the "I hear it" confirm button after the ambient player resolves', async () => {
     render(<NamePrompt onSubmit={() => {}} />);
     fireEvent.click(
       screen.getByRole('button', { name: /play (a )?sound|test sound|hear/i }),
     );
 
-    // While playing, no confirm button yet.
+    // While the promise is pending, no confirm button yet.
     expect(screen.queryByRole('button', { name: /i hear it|yes/i })).toBeNull();
 
     await act(async () => {
-      resolveSample?.();
+      resolveSetMuted?.();
     });
 
     expect(
@@ -71,13 +82,13 @@ describe('NamePrompt', () => {
     ).toBeInTheDocument();
   });
 
-  it('enables the name field after the user confirms they heard the sample', async () => {
+  it('enables the name field after the user confirms they heard the sound', async () => {
     render(<NamePrompt onSubmit={() => {}} />);
     fireEvent.click(
       screen.getByRole('button', { name: /play (a )?sound|test sound|hear/i }),
     );
     await act(async () => {
-      resolveSample?.();
+      resolveSetMuted?.();
     });
     fireEvent.click(screen.getByRole('button', { name: /i hear it|yes/i }));
 
@@ -94,7 +105,7 @@ describe('NamePrompt', () => {
       screen.getByRole('button', { name: /play (a )?sound|test sound|hear/i }),
     );
     await act(async () => {
-      resolveSample?.();
+      resolveSetMuted?.();
     });
     fireEvent.click(screen.getByRole('button', { name: /i hear it|yes/i }));
 
@@ -105,14 +116,14 @@ describe('NamePrompt', () => {
     expect(onSubmit).toHaveBeenCalledWith('Lera');
   });
 
-  it('lets the user retry when the sample playback errors out', async () => {
+  it('lets the user retry when the ambient player rejects', async () => {
     render(<NamePrompt onSubmit={() => {}} />);
     fireEvent.click(
       screen.getByRole('button', { name: /play (a )?sound|test sound|hear/i }),
     );
 
     await act(async () => {
-      rejectSample?.(new Error('blocked'));
+      rejectSetMuted?.(new Error('blocked'));
     });
 
     // After failure, the play button is offered again.
@@ -132,7 +143,7 @@ describe('NamePrompt', () => {
       screen.getByRole('button', { name: /play (a )?sound|test sound|hear/i }),
     );
     await act(async () => {
-      resolveSample?.();
+      resolveSetMuted?.();
     });
     fireEvent.click(screen.getByRole('button', { name: /i hear it|yes/i }));
 

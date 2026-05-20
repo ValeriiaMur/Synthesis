@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { EquivalenceMaterial } from './EquivalenceMaterial';
 import type { EquivalenceConfig, EquivalenceState } from '@/lib/lesson/types';
 
-const config: EquivalenceConfig = { kind: 'equivalence', targetCount: 2 };
+const config: EquivalenceConfig = { kind: 'equivalence', targetCount: 4 };
 
 function Harness() {
   const [state, setState] = useState<EquivalenceState>({
@@ -19,75 +19,85 @@ function Harness() {
   );
 }
 
-describe('EquivalenceMaterial — chocolate tap-to-cover', () => {
-  it('renders one half + a pile of quarter buttons', () => {
+describe('EquivalenceMaterial — fill the whole (target = 4)', () => {
+  it('renders one tray + a pile of quarter buttons', () => {
     render(<Harness />);
-    expect(screen.getByLabelText(/one half/i)).toBeInTheDocument();
-    expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByTestId('equivalence-whole')).toBeInTheDocument();
+    expect(
+      screen.getAllByLabelText(/place quarter on the whole/i).length,
+    ).toBeGreaterThan(0);
   });
 
-  it('shows two empty slots on the half before any taps', () => {
+  it('shows four empty slots before any taps', () => {
     render(<Harness />);
     const slots = screen.getAllByTestId('equivalence-slot');
-    expect(slots).toHaveLength(2);
+    expect(slots).toHaveLength(4);
     slots.forEach((s) => expect(s.dataset.filled).toBeUndefined());
   });
 
-  it('first quarter tap: placedCount 0 → 1, slot 0 fills', () => {
+  it('first tap: placedCount 0 → 1, slot 0 fills', () => {
     render(<Harness />);
-    const pile = screen.getAllByLabelText(/place quarter/i);
-    fireEvent.click(pile[0]);
+    fireEvent.click(screen.getAllByLabelText(/place quarter/i)[0]);
     expect(screen.getByTestId('placed').textContent).toBe('1');
     const slots = screen.getAllByTestId('equivalence-slot');
     expect(slots[0].dataset.filled).toBe('true');
     expect(slots[1].dataset.filled).toBeUndefined();
   });
 
-  it('second tap: placedCount 1 → 2, both slots filled, half is covered', () => {
+  it('four taps fill all slots and mark the whole as covered', () => {
     render(<Harness />);
-    const pile0 = screen.getAllByLabelText(/place quarter/i);
-    fireEvent.click(pile0[0]);
-    const pile1 = screen.getAllByLabelText(/place quarter/i);
-    fireEvent.click(pile1[0]);
-    expect(screen.getByTestId('placed').textContent).toBe('2');
+    for (let i = 0; i < 4; i++) {
+      fireEvent.click(screen.getAllByLabelText(/place quarter/i)[0]);
+    }
+    expect(screen.getByTestId('placed').textContent).toBe('4');
     const slots = screen.getAllByTestId('equivalence-slot');
-    expect(slots[0].dataset.filled).toBe('true');
-    expect(slots[1].dataset.filled).toBe('true');
-    const half = screen.getByLabelText(/one half/i);
-    expect(half.dataset.covered).toBe('true');
+    slots.forEach((s) => expect(s.dataset.filled).toBe('true'));
+    expect(screen.getByTestId('equivalence-whole').dataset.covered).toBe('true');
   });
 
-  it('extra taps after coverage are silent — placedCount stays at target', () => {
+  it('shows the hammer once the whole is filled (and hides the pile)', () => {
     render(<Harness />);
-    // Fill it.
-    const a = screen.getAllByLabelText(/place quarter/i);
-    fireEvent.click(a[0]);
-    fireEvent.click(screen.getAllByLabelText(/place quarter/i)[0]);
-    expect(screen.getByTestId('placed').textContent).toBe('2');
+    for (let i = 0; i < 4; i++) {
+      fireEvent.click(screen.getAllByLabelText(/place quarter/i)[0]);
+    }
+    expect(
+      screen.getByLabelText(/drag the hammer onto the bar/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryAllByLabelText(/place quarter/i).length,
+    ).toBe(0);
+  });
 
-    // No more pile buttons should be enabled.
-    const remaining = screen.queryAllByLabelText(/place quarter/i);
-    remaining.forEach((b) => {
-      // Either gone from the DOM or disabled — both are valid auto-corrections.
-      if (b.isConnected) expect(b).toBeDisabled();
+  it('hammer activation (Enter) breaks the bar — placedCount resets to 0', () => {
+    render(<Harness />);
+    for (let i = 0; i < 4; i++) {
+      fireEvent.click(screen.getAllByLabelText(/place quarter/i)[0]);
+    }
+    expect(screen.getByTestId('placed').textContent).toBe('4');
+    fireEvent.keyDown(screen.getByLabelText(/drag the hammer/i), {
+      key: 'Enter',
     });
+    expect(screen.getByTestId('placed').textContent).toBe('0');
+    // Pile comes back so the kid can fill again.
+    expect(
+      screen.getAllByLabelText(/place quarter/i).length,
+    ).toBeGreaterThan(0);
   });
 
-  it('shows an observational status line at every step', () => {
+  it('shows observational status at every step', () => {
     render(<Harness />);
-    // Empty state
     expect(screen.getByTestId('equivalence-status').textContent ?? '').toMatch(
       /tap a quarter/,
     );
-    // One placed
     fireEvent.click(screen.getAllByLabelText(/place quarter/i)[0]);
     expect(screen.getByTestId('equivalence-status').textContent ?? '').toMatch(
-      /one more/,
+      /3 more/,
     );
-    // Both placed — equivalence stated outright
-    fireEvent.click(screen.getAllByLabelText(/place quarter/i)[0]);
+    for (let i = 0; i < 3; i++) {
+      fireEvent.click(screen.getAllByLabelText(/place quarter/i)[0]);
+    }
     expect(screen.getByTestId('equivalence-status').textContent ?? '').toMatch(
-      /two quarters/,
+      /four quarters fill the whole/,
     );
   });
 

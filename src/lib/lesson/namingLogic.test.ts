@@ -29,10 +29,10 @@ describe('regionKind', () => {
     expect(regionKind(0, ['quarter'])).toBe('quarter');
     expect(regionKind(3, ['quarter'])).toBe('quarter');
   });
-  it('mixed: index 0 is the half-tile, 1..4 are quarter-tiles', () => {
-    expect(regionKind(0, ['half', 'quarter'])).toBe('half');
+  it('mixed: the half-tile is centered at index 2; the rest are quarters', () => {
+    expect(regionKind(0, ['half', 'quarter'])).toBe('quarter');
     expect(regionKind(1, ['half', 'quarter'])).toBe('quarter');
-    expect(regionKind(2, ['half', 'quarter'])).toBe('quarter');
+    expect(regionKind(2, ['half', 'quarter'])).toBe('half');
     expect(regionKind(3, ['half', 'quarter'])).toBe('quarter');
     expect(regionKind(4, ['half', 'quarter'])).toBe('quarter');
   });
@@ -40,42 +40,51 @@ describe('regionKind', () => {
 
 describe('pickPromptKind', () => {
   it('halves-only always prompts half', () => {
-    expect(pickPromptKind(['half'], undefined)).toBe('half');
-    expect(pickPromptKind(['half'], 'half')).toBe('half');
+    expect(pickPromptKind(['half'], [])).toBe('half');
+    expect(pickPromptKind(['half'], [0])).toBe('half');
   });
   it('quarters-only always prompts quarter', () => {
-    expect(pickPromptKind(['quarter'], undefined)).toBe('quarter');
+    expect(pickPromptKind(['quarter'], [])).toBe('quarter');
   });
-  it('mixed: first prompt is half by convention', () => {
-    expect(pickPromptKind(['half', 'quarter'], undefined)).toBe('half');
+  it('mixed: first prompt is half (no tapped indices yet)', () => {
+    expect(pickPromptKind(['half', 'quarter'], [])).toBe('half');
   });
-  it('mixed: alternates strictly from the previous prompt', () => {
-    expect(pickPromptKind(['half', 'quarter'], 'half')).toBe('quarter');
-    expect(pickPromptKind(['half', 'quarter'], 'quarter')).toBe('half');
+  it('mixed: still prompts half if only quarters (not the centered half) are tapped', () => {
+    expect(pickPromptKind(['half', 'quarter'], [0])).toBe('half');
+    expect(pickPromptKind(['half', 'quarter'], [0, 1])).toBe('half');
+  });
+  it('mixed: once the centered half (idx 2) is tapped, prompt switches to quarter', () => {
+    expect(pickPromptKind(['half', 'quarter'], [2])).toBe('quarter');
+    expect(pickPromptKind(['half', 'quarter'], [2, 0, 1])).toBe('quarter');
   });
 });
 
 describe('evalTap', () => {
-  it('correct tap: accepted + streak increments', () => {
-    expect(evalTap('half', 'half', 0)).toEqual({ accepted: true, nextStreak: 1 });
-    expect(evalTap('quarter', 'quarter', 2)).toEqual({
+  it('correct tap on a fresh index: accepted + index appended', () => {
+    expect(evalTap('half', 'half', 0, [])).toEqual({
       accepted: true,
-      nextStreak: 3,
+      nextTapped: [0],
+    });
+    expect(evalTap('quarter', 'quarter', 3, [1])).toEqual({
+      accepted: true,
+      nextTapped: [1, 3],
     });
   });
-  it('wrong tap: silent — not accepted, streak unchanged, no penalty', () => {
-    expect(evalTap('half', 'quarter', 2)).toEqual({
+  it('wrong-kind tap: silently rejected, tapped unchanged', () => {
+    expect(evalTap('half', 'quarter', 2, [0])).toEqual({
       accepted: false,
-      nextStreak: 2,
+      nextTapped: [0],
     });
-    expect(evalTap('quarter', 'half', 0)).toEqual({
+    expect(evalTap('quarter', 'half', 0, [])).toEqual({
       accepted: false,
-      nextStreak: 0,
+      nextTapped: [],
     });
   });
-  it('streak never resets on wrong tap (Montessori control-of-error)', () => {
-    const result = evalTap('half', 'quarter', 5);
-    expect(result.nextStreak).toBe(5);
+  it('repeat tap of an already-tapped index: silently rejected', () => {
+    expect(evalTap('quarter', 'quarter', 1, [1, 2])).toEqual({
+      accepted: false,
+      nextTapped: [1, 2],
+    });
   });
 });
 

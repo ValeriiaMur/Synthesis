@@ -10,7 +10,8 @@
     "lint:fix": "eslint --fix",
     "test": "vitest",
     "test:run": "vitest run",
-    "bake:voice": "node --env-file=.env scripts/bake-voice.mts"
+    "bake:voice": "node --env-file=.env scripts/bake-voice.mts",
+    "bake:sfx": "node --env-file=.env scripts/bake-sfx.mts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -21,6 +22,7 @@
     "framer-motion": "^12.39.0",
     "langsmith": "^0.7.1",
     "next": "16.2.6",
+    "posthog-js": "^1.374.2",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },

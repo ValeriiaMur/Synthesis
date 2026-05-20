@@ -12,12 +12,11 @@ export type PaperFracProps = {
  * folded quadrant of the paper.
  */
 export function PaperFrac({ n, d, big = false }: PaperFracProps) {
-  const fs = big ? 'clamp(64px, 9vmin, 110px)' : 'clamp(32px, 5vmin, 56px)';
+  // Smaller than before so the white-on-blue chip fits cleanly inside a
+  // quadrant without crowding the paper.
+  const fs = big ? 'clamp(40px, 6vmin, 64px)' : 'clamp(26px, 4vmin, 40px)';
   return (
-    <span
-      className="paper-frac"
-      style={{ fontSize: fs, color: big ? '#1a0f04' : '#2a1d0d' }}
-    >
+    <span className="paper-frac" style={{ fontSize: fs }}>
       <span>{n}</span>
       <span />
       <span>{d}</span>

@@ -103,7 +103,7 @@ export function DemoThreePeriod() {
           textAlign: 'center',
         }}
       >
-        Period 3 is your MC. Periods 1 + 2 are the manipulatives that come before it.
+        Period 3 is the material itself: cover the half with two quarters, then fold the paper to prove it.
       </div>
     </DemoFrame>
   );

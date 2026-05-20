@@ -8,11 +8,11 @@ Forward-looking roadmap (Phase 1 → Phase 2 → Phase 3, what gets built when):
 
 ## What this app is
 
-A five-beat **naming-first** fraction lesson for a 6–8 year old on an iPad,
+A six-beat **naming-first** fraction lesson for a 6–8 year old on an iPad,
 plus a "How It Works" one-pager that walks adult viewers through the eight
-Montessori principles behind it. The lesson teaches *what one half is* and
-*what one quarter is* before it asks the kid to recognize that one half is
-the same as two quarters. See [montessori-plan.md](montessori-plan.md) for
+Montessori principles behind it. The lesson opens by splitting a whole bar
+in half, then teaches *what one half is* and *what one quarter is* before
+it asks the kid to recognize that one half is the same as two quarters. See [montessori-plan.md](montessori-plan.md) for
 the cognitive-load reasoning (the Hinten et al. 2025 meta-analysis on
 fantastical content in young-child media).
 
@@ -27,26 +27,27 @@ Two UI routes, one visual system (cosmos / space palette in
 [globals.css](src/app/globals.css)):
 
 - **`/` — `HowItWorksPage`** — full-bleed scrollytelling marketing page.
-- **`/lesson` — `LessonPage`** — five-beat lesson; full-width notebook.
+- **`/lesson` — `LessonPage`** — six-beat lesson; full-width notebook.
   Goes through a `NamePrompt` first (the click satisfies the browser's
   autoplay-gesture requirement so the lesson can speak its prose).
 
-The five beats:
+The six beats:
 
 | # | Beat id                    | Concept                        | Material                                                              |
 |---|----------------------------|--------------------------------|-----------------------------------------------------------------------|
+| 0 | `whole_intro`              | Period 1 — introduce ① (whole) | Chocolate bar (4 quarter-units, no gap); tap splits it into two halves |
 | 1 | `name_half`                | Period 1 — introduce ½         | Chocolate bar, 2 tap regions                                          |
 | 2 | `name_quarter`             | Period 1 — introduce ¼         | Chocolate bar, 4 tap regions                                          |
 | 3 | `mix_half_quarter`         | Period 2 — recognize ½ vs ¼    | Mixed mat (1 half tile + 4 quarters) with a cycling "tap the X" label |
 | 4 | `equiv_half_two_quarters`  | Period 3 — ½ = ²⁄₄ (recall)    | Chocolate tap-to-cover (half-frame + 2 slots + a pile of quarters)    |
 | 5 | `equiv_paper_check`        | Period 3 — *transfer* check    | Paper-fold (square, fold twice = proof)                               |
 
-Beats 1–4 use the **same chocolate material** (cognitive coherence — one
-visual schema across naming → equivalence; the chocolate art is a single
-PNG at `public/images/chocolate.png` rendered through `ChocolatePiece`).
-Beat 5 swaps to paper-fold as a transfer check: the kid has proved the
-equivalence on chocolate; can they recognize it in a new representation?
-Two folds → done.
+Beats 0–4 use the **same chocolate material** (cognitive coherence — one
+visual schema across whole → naming → equivalence; the chocolate art is a
+single PNG at `public/images/chocolate.png` rendered through
+`ChocolatePiece`). Beat 5 swaps to paper-fold as a transfer check: the
+kid has proved the equivalence on chocolate; can they recognize it in a
+new representation? Two folds → done.
 
 **Decision contract.** There is no `branching.ts` anymore — the active
 lesson has no branching to do. State lives in React (`LessonPage`) and on
@@ -101,12 +102,13 @@ src/
     lesson/
       LessonPage.tsx         # composition only, wires the hooks below
       LessonBeatCell.tsx     # per-beat cell (prose + manipulative slot)
-      ManipulativeSlot.tsx   # dispatch by manipulative.kind → Naming / Equivalence / PaperFold
+      ManipulativeSlot.tsx   # dispatch by manipulative.kind → Whole / Naming / Equivalence / PaperFold
+      WholeMaterial.tsx      # Beat 0 — one whole bar, tap to split it in half
       NamingMaterial.tsx     # L1–L3 tap-to-name (chocolate bar / mixed mat)
       EquivalenceMaterial.tsx# L4 tap-to-cover (half-frame + slots + chocolate pile)
       NamePrompt.tsx         # autoplay-gesture capture; name stored in localStorage
       Cell, Prose
-      Intro, Outro, ResumePrompt
+      Outro, ResumePrompt
       TopBar
       Icon* (Sound, ArrowLeft)
     onepager/
@@ -116,13 +118,13 @@ src/
       demos/ (DemoFrame, OrderToggle, TrayItem, FauxCell + 8 Demo* files)
   lib/
     lesson/
-      types.ts               # Beat, ManipulativeConfig (Naming|Equivalence|Paper), states
-      lessonData.ts          # 5 beats — naming-first, chocolate throughline, paper-fold check
+      types.ts               # Beat, ManipulativeConfig (Whole|Naming|Equivalence|Paper), states
+      lessonData.ts          # 6 beats — whole intro → naming-first → equivalence → paper-fold check
       completes.ts           # isBeatComplete — pure predicate over (Beat, ManipulativeState)
-      namingLogic.ts         # regionCount/regionKind/pickPromptKind/evalTap (L1–L3)
-      coverLogic.ts          # placeQuarter/isCovered (L4)
+      namingLogic.ts         # regionCount/regionKind/pickPromptKind/evalTap/feedbackMessage (L1–L3)
+      coverLogic.ts          # placeQuarter/isCovered/coverStatusText (L4)
       paperLogic.ts          # nextFoldAxis/applyFold/isProven (L5)
-      lessonPersistence.ts   # localStorage snapshot + isManipulativeState guard (schema v4)
+      lessonPersistence.ts   # localStorage snapshot + isManipulativeState guard (schema v5)
       phaseLabel.ts          # LessonPhase → "P1 · introduce" label
       useLessonStateMachine.ts  # state + handleManip + advanceTo (no MC paths)
       useLessonVoice.ts      # speakAri + mute + mount-time voice + resume scroll
@@ -131,6 +133,7 @@ src/
       useReveal.ts, useScrollProgress.ts
     audio/
       ambientPlayer.ts       # home-page ambient pad singleton
+      sfxPlayer.ts           # one-shot SFX (chocolate snap, paper fold), mute-aware
     voice/
       elevenLabsClient.ts    # server-side ElevenLabs TTS wrapper (Rachel, eleven_flash_v2_5)
       ttsClient.ts           # client fetch — manifest lookup → static MP3, else /api/tts
@@ -323,6 +326,30 @@ one doesn't affect the other.
   lesson so the visual language matches the lesson's mute button. State
   binds via `useSyncExternalStore(player.subscribe, player.isMuted)`.
 
+## Lesson SFX (chocolate snap, paper fold)
+
+Tiny one-shot effects layered under Ari's voice. Two static MP3s sit in
+`public/audio/sfx/`:
+
+- `chocolate-snap.mp3` — fires on every chocolate tap in `NamingMaterial`
+  (L1–L3) and `EquivalenceMaterial` (L4), and on every hammer-break in L4.
+- `paper-fold.mp3` — fires on every accepted fold in `PaperFold` (L5),
+  via a `prevFoldsRef` effect so a hydrated restore doesn't replay past
+  folds.
+
+`sfxPlayer.ts` is a factory + lazy singleton (`getSfxPlayer()`). Each
+`play(key)` constructs a fresh `Audio` element so rapid retriggers
+overlap (two taps in quick succession sound like two snaps, not one
+truncating the other). Mute is *inherited* from the voice player —
+`isMuted: () => getVoicePlayer().isMuted()` — so the lesson's existing
+sound toggle silences voice + SFX together. Volume defaults to 0.3 to
+sit beneath Ari's narration. Autoplay rejections are swallowed.
+
+Both clips are generated via `npm run bake:sfx`
+([scripts/bake-sfx.mts](scripts/bake-sfx.mts)) hitting the ElevenLabs
+sound-generation endpoint. The script skips existing files — to swap a
+sound, delete the mp3, edit its prompt in the script, re-run.
+
 ## Unveil — home-page intro (once per session)
 
 `HowItWorksPage` mounts an `<Unveil />` sibling before its `.page` div.
@@ -405,9 +432,9 @@ the flip. All synchronous — no fetch, no race.
   successful fold; capped at two folds.
 
 Each component holds its own UI state (lift animation, prompt-cycling,
-drag/fold pointer math) but the only fact it pushes upward is the
-manipulative-kind state. The state machine doesn't know or care how the
-fact was produced.
+fold pointer math, `@dnd-kit/core` drag in `EquivalenceMaterial`'s
+hammer) but the only fact it pushes upward is the manipulative-kind
+state. The state machine doesn't know or care how the fact was produced.
 
 **Persistence (`SCHEMA_VERSION = 4`).** The four states above all
 serialize to plain JSON. `isManipulativeState` validates kind + field
@@ -549,3 +576,7 @@ title scales smoothly from iPad mini portrait up through desktop.
 - `npm run bake:voice` — regenerate `public/audio/voice/*.mp3` + `manifest.json`
   from the scripted lesson lines. Skip-if-exists: only re-fetches lines
   whose text changed. Reads `ELEVENLABS_API_KEY` from `.env`.
+- `npm run bake:sfx` — regenerate `public/audio/sfx/*.mp3` (chocolate
+  snap, paper fold) via the ElevenLabs sound-generation API. Skip-if-exists
+  per file — delete an mp3 to re-bake it with the prompt currently in the
+  script.

@@ -3,8 +3,6 @@ import { useMemo, type ReactNode } from 'react';
 export type ProseProps = {
   /** Text with inline highlight tokens: `{y}…{/y}`, `{r}…{/r}`, `{b}`, `{g}`. */
   readonly text: string;
-  /** When true (default), render the "ARI" caps label at the start of the paragraph. */
-  readonly withAriLabel?: boolean;
 };
 
 type TokenColor = 'y' | 'r' | 'b' | 'g';
@@ -50,16 +48,15 @@ function renderSegment(seg: Segment, i: number): ReactNode {
 }
 
 /**
- * Renders Ari's prose, expanding the inline highlight tokens into colored spans.
+ * Renders the beat's prose, expanding the inline highlight tokens into
+ * colored spans. The narrator-name label that used to prefix each line
+ * ("ARI") was removed — the material does the talking now; the prose is
+ * just a single observational instruction.
+ *
  * Matches the cosmos-palette design: yellow emphasis via `<em>`, numerals via
  * `.num-red` / `.num-blue` / `.num-green` (color rules live in globals.css).
  */
-export function Prose({ text, withAriLabel = true }: ProseProps) {
+export function Prose({ text }: ProseProps) {
   const segments = useMemo(() => tokenize(text), [text]);
-  return (
-    <p className="prose">
-      {withAriLabel && <span className="ari-name">ARI</span>}
-      {segments.map(renderSegment)}
-    </p>
-  );
+  return <p className="prose">{segments.map(renderSegment)}</p>;
 }

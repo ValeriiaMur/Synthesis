@@ -7,7 +7,7 @@ import type { Lesson } from './types';
  *   01  name_half                  what is one half
  *   02  name_quarter               what is one quarter
  *   03  mix_half_quarter           halves and quarters together
- *   04  equiv_half_two_quarters    one half = two quarters  (chocolate tap-to-cover)
+ *   04  equiv_half_two_quarters    one whole = four quarters (build the whole + hammer-break it)
  *   05  equiv_paper_check          transfer check            (paper-fold)
  *
  * Each beat is one concept. No story arc, no characters. Beats 0–4 use the
@@ -30,35 +30,35 @@ export const lesson: Lesson = {
       id: 'name_half',
       phase: 'period_1_introduce',
       kindLabel: 'one half',
-      prose: 'Tap one half.',
-      manipulative: { kind: 'naming', fractions: ['half'], masteryStreak: 3 },
+      prose: 'Tap each half.',
+      manipulative: { kind: 'naming', fractions: ['half'] },
     },
     {
       id: 'name_quarter',
       phase: 'period_1_introduce',
       kindLabel: 'one quarter',
-      prose: 'Tap one quarter.',
-      manipulative: { kind: 'naming', fractions: ['quarter'], masteryStreak: 3 },
+      prose: 'Tap each quarter.',
+      manipulative: { kind: 'naming', fractions: ['quarter'] },
     },
     {
       id: 'mix_half_quarter',
       phase: 'period_2_recognize',
       kindLabel: 'halves and quarters',
-      prose: 'Tap the half. Then tap the quarter.',
-      manipulative: { kind: 'naming', fractions: ['half', 'quarter'], masteryStreak: 4 },
+      prose: 'Tap the half. Then tap each quarter.',
+      manipulative: { kind: 'naming', fractions: ['half', 'quarter'] },
     },
     {
       id: 'equiv_half_two_quarters',
       phase: 'period_3_recall',
-      kindLabel: 'half = two quarters',
-      prose: 'Place quarters on the half until it fits exactly.',
-      manipulative: { kind: 'equivalence', targetCount: 2 },
+      kindLabel: 'whole = four quarters',
+      prose: 'Place four quarters to fill the whole. Then break it with the hammer.',
+      manipulative: { kind: 'equivalence', targetCount: 4 },
     },
     {
       id: 'equiv_paper_check',
       phase: 'period_3_recall',
       kindLabel: 'check: half = two quarters',
-      prose: 'Fold the paper. Then fold again.',
+      prose: 'Notice what we just saw: a whole can be named as halves and as quarters. Now show that same idea by folding the paper.',
       manipulative: { kind: 'paper', targetFolds: ['horizontal', 'vertical'] },
     },
   ],

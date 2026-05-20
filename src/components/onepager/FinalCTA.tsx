@@ -39,7 +39,7 @@ export function FinalCTA() {
         <span style={{ color: 'var(--blue)' }}>²⁄₄</span>
       </div>
       <h3>
-        Six minutes. Three things to handle.
+        Six minutes. Two materials.
         <br />
         One idea you&rsquo;ll see, not be told.
       </h3>

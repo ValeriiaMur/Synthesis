@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { IconArrowLeft } from './IconArrowLeft';
-import { IconSound } from './IconSound';
+import Link from "next/link";
+import { IconArrowLeft } from "./IconArrowLeft";
+import { IconSound } from "./IconSound";
 
 export type TopBarProps = {
   readonly onToggleSound?: () => void;
@@ -28,15 +28,15 @@ export function TopBar({ onToggleSound, muted = false }: TopBarProps) {
         </Link>
         <div className="lesson-tag">
           <span className="dot" aria-hidden />
-          fractions
+          What are fractions?
         </div>
       </div>
       <div className="topbar-side">
         <button
           type="button"
           className="icon-btn"
-          title={muted ? 'Unmute' : 'Mute'}
-          aria-label={muted ? 'Unmute' : 'Mute'}
+          title={muted ? "Unmute" : "Mute"}
+          aria-label={muted ? "Unmute" : "Mute"}
           aria-pressed={muted}
           onClick={onToggleSound}
         >

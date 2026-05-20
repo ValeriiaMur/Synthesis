@@ -13,6 +13,7 @@ import {
 import type { PaperState } from '@/lib/lesson/types';
 import { Paper } from './paper/Paper';
 import { WholeNumber } from './paper/WholeNumber';
+import { getSfxPlayer } from '@/lib/audio/sfxPlayer';
 
 type FoldDirection = 'horizontal' | 'vertical';
 type FoldCount = 0 | 1 | 2;
@@ -150,6 +151,19 @@ export function PaperFold({ value, onChange, disabled = false }: PaperFoldProps)
 
   useEffect(() => {
     onChangeRef.current?.({ kind: 'paper', folds: FOLDS_BY_COUNT[folds] });
+  }, [folds]);
+
+  /* Play the paper-fold SFX whenever the fold count actually advances.
+   * Effect-based so a single commit fires the sound once (vs. inlining
+   * inside `setFolds`'s updater, which React may invoke twice in
+   * StrictMode). The initial render is silent because the ref starts at
+   * `folds` — a hydrated restore won't replay sounds for past folds. */
+  const prevFoldsRef = useRef(folds);
+  useEffect(() => {
+    if (folds > prevFoldsRef.current) {
+      getSfxPlayer().play('paperFold');
+    }
+    prevFoldsRef.current = folds;
   }, [folds]);
 
   const cornerSpec = useMemo(() => specFor(folds), [folds]);

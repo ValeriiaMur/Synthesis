@@ -7,7 +7,7 @@
 
 import type { BeatId, ManipulativeState } from './types';
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export type PersistedLessonState = {
   readonly schemaVersion: number;
@@ -53,7 +53,17 @@ function parseUnknownMap<T>(
 function isManipulativeState(v: unknown): v is ManipulativeState {
   if (!isStringRecord(v)) return false;
   if (v.kind === 'whole') return typeof v.split === 'boolean';
-  if (v.kind === 'naming') return typeof v.streak === 'number';
+  if (v.kind === 'naming') {
+    // New shape: { tapped: number[] }. Old shape: { streak: number }.
+    // Either is acceptable on hydrate — old snapshots simply restore
+    // with an empty tapped set (kid starts the beat from scratch) and
+    // the schema version bump means most legacy snapshots are dropped
+    // before we get here anyway.
+    if (Array.isArray(v.tapped)) {
+      return v.tapped.every((n: unknown) => typeof n === 'number');
+    }
+    return typeof v.streak === 'number';
+  }
   if (v.kind === 'equivalence') return typeof v.placedCount === 'number';
   if (v.kind === 'paper') {
     if (!Array.isArray(v.folds)) return false;

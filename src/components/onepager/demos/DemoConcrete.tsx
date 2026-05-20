@@ -16,7 +16,7 @@ const SEQUENCES: Readonly<Record<OrderKind, readonly Step[]>> = {
   ],
   ours: [
     { kind: 'manip', text: 'Place quarter-pieces on the half-space.' },
-    { kind: 'manip', text: 'Slice the pizza. Fold the paper.' },
+    { kind: 'manip', text: 'Fold the paper to prove it again.' },
     { kind: 'abstract', text: 'Then — and only then — ½ = ²⁄₄.' },
   ],
 };

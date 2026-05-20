@@ -9,18 +9,17 @@ import {
   regionCount,
   regionKind,
   type Feedback,
-  type FractionKind,
 } from '@/lib/lesson/namingLogic';
 import { ChocolatePiece } from '@/components/manipulatives/ChocolatePiece';
+import { getSfxPlayer } from '@/lib/audio/sfxPlayer';
 
 /** Unit-based sizes — matches the home tray demo and the WholeMaterial:
- *  one quarter = one UNIT_PX square, one half = two units wide. This keeps
- *  the visual relationship "a half is two quarters" literal across every
- *  beat instead of resizing the chocolate per lesson. */
+ *  one quarter = one UNIT_PX square, one half = TWO units (a 2×1 slab made
+ *  of two seamless quarter-images, mirroring how the WholeMaterial builds
+ *  its halves). The unit stays constant across every beat so "half = 2
+ *  quarters" is a visible fact, not just a label. */
 const UNIT_PX = 80;
-const HALF_W_PX = UNIT_PX * 2; // 160
-const HALF_H_PX = UNIT_PX;     // 80
-const QUARTER_PX = UNIT_PX;    // 80
+const QUARTER_PX = UNIT_PX;    // 80×80
 
 /** How long an observational feedback line stays before fading. Long enough
  *  to read once; short enough not to overlap the next tap. */
@@ -62,7 +61,6 @@ export function NamingMaterial({
   const count = regionCount(fractions);
   const mixed = fractions.length > 1;
 
-  const [prevPrompt, setPrevPrompt] = useState<FractionKind | undefined>(undefined);
   const [liftedIdx, setLiftedIdx] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [idle, setIdle] = useState(false);
@@ -97,17 +95,20 @@ export function NamingMaterial({
     idleTimerRef.current = window.setTimeout(() => setIdle(true), IDLE_HINT_MS);
   }, []);
 
-  const streak = value?.streak ?? 0;
-  const promptKind = pickPromptKind(fractions, prevPrompt);
+  const tappedIndices = value?.tapped ?? [];
+  const tappedSet = new Set(tappedIndices);
+  const promptKind = pickPromptKind(fractions, tappedIndices);
 
   const handleTap = (idx: number): void => {
     if (disabled) return;
-    const tapped = regionKind(idx, fractions);
-    const result = evalTap(promptKind, tapped, streak);
+    getSfxPlayer().play('chocolateSnap');
+    const tappedKind = regionKind(idx, fractions);
+    const result = evalTap(promptKind, tappedKind, idx, tappedIndices);
 
-    // Always show feedback — both for correct AND wrong taps. The streak
-    // still doesn't change on wrong taps (control-of-error preserved).
-    const fb = feedbackMessage(promptKind, tapped);
+    // Always show feedback — both for correct AND rejected taps. Wrong
+    // kind = observation. Repeat tap of an already-tapped piece doesn't
+    // change state (the kid already mastered that piece).
+    const fb = feedbackMessage(promptKind, tappedKind);
     setFeedback(fb);
     if (feedbackTimerRef.current !== null) window.clearTimeout(feedbackTimerRef.current);
     feedbackTimerRef.current = window.setTimeout(() => {
@@ -126,16 +127,15 @@ export function NamingMaterial({
       liftTimerRef.current = null;
     }, 280);
 
-    setPrevPrompt(promptKind);
-    onChange({ kind: 'naming', streak: result.nextStreak });
+    onChange({ kind: 'naming', tapped: result.nextTapped });
   };
 
   const layout = mixed ? 'mixed' : fractions[0];
   const idleHint = (() => {
     if (!idle || feedback) return null;
-    if (streak > 0) return null; // they've engaged — don't nag.
+    if (tappedIndices.length > 0) return null; // they've engaged — don't nag.
     if (mixed) return `find a ${promptKind} and tap it.`;
-    return `tap any ${fractions[0]} on the bar.`;
+    return `tap each ${fractions[0]} on the bar.`;
   })();
 
   return (
@@ -149,21 +149,46 @@ export function NamingMaterial({
         {Array.from({ length: count }).map((_, i) => {
           const kind = regionKind(i, fractions);
           const lifted = liftedIdx === i;
-          const isHalfTile = kind === 'half' && mixed;
-          const w = isHalfTile ? HALF_W_PX : QUARTER_PX;
-          const h = isHalfTile ? HALF_H_PX : QUARTER_PX;
+          const alreadyTapped = tappedSet.has(i);
           return (
             <button
               key={i}
               type="button"
-              className={`naming-piece naming-piece--${kind}${lifted ? ' is-lifted' : ''}`}
+              className={`naming-piece naming-piece--${kind}${lifted ? ' is-lifted' : ''}${alreadyTapped ? ' is-tapped' : ''}`}
               data-kind={kind}
               data-lifted={lifted || undefined}
+              data-tapped={alreadyTapped || undefined}
               onClick={() => handleTap(i)}
               disabled={disabled}
-              aria-label={`${kind} piece`}
+              aria-label={`${kind} piece${alreadyTapped ? ' (tapped)' : ''}`}
             >
-              <ChocolatePiece size={h} width={w} placed={lifted} alt="" />
+              {kind === 'half' ? (
+                // A half is literally two quarter-units glued together,
+                // wrapped in a slab container that carries the rounded
+                // corners + drop-shadow (the inner pieces are seamless).
+                // The "1⁄2" overlay names the symbol on top of the slab.
+                <span className="naming-half-slab">
+                  <ChocolatePiece size={UNIT_PX} width={UNIT_PX} alt="" seamless />
+                  <ChocolatePiece size={UNIT_PX} width={UNIT_PX} alt="" seamless />
+                  <span className="stacked-frac naming-piece-frac" aria-hidden>
+                    <span className="stacked-frac-top">1</span>
+                    <span className="stacked-frac-bot">2</span>
+                  </span>
+                </span>
+              ) : (
+                <span className="naming-quarter-tile">
+                  <ChocolatePiece
+                    size={QUARTER_PX}
+                    width={QUARTER_PX}
+                    placed={lifted}
+                    alt=""
+                  />
+                  <span className="stacked-frac naming-piece-frac" aria-hidden>
+                    <span className="stacked-frac-top">1</span>
+                    <span className="stacked-frac-bot">4</span>
+                  </span>
+                </span>
+              )}
             </button>
           );
         })}

@@ -5,16 +5,31 @@ import { ChocolatePiece } from '@/components/manipulatives/ChocolatePiece';
 
 /** One quarter-square in CSS pixels. The intro bar is built from 4 of these
  *  laid out with NO gap so the kid reads them as one continuous whole. When
- *  the bar splits, the middle gap opens by SPLIT_GAP_PX, making it visible
- *  that one whole is now two halves of 2 quarters each. */
+ *  the bar splits, an inline gap opens between the two halves and the
+ *  "1⁄2" labels fade in flanking each half. */
 const UNIT_PX = 80;
-const SPLIT_GAP_PX = 28;
 
 export type WholeMaterialProps = {
   readonly value?: WholeState;
   readonly onChange: (state: WholeState) => void;
   readonly disabled?: boolean;
 };
+
+/** Stacked fraction (numerator over denominator with a horizontal rule).
+ *  Shared markup with HeroPreview; styles live in globals.css under
+ *  `.stacked-frac`. */
+function HalfFrac() {
+  return (
+    <span
+      className="stacked-frac whole-frac"
+      aria-hidden
+      style={{ fontSize: 22 }}
+    >
+      <span className="stacked-frac-top">1</span>
+      <span className="stacked-frac-bot">2</span>
+    </span>
+  );
+}
 
 /**
  * Beat 0 — "this is one whole. tap to split it in half."
@@ -24,11 +39,18 @@ export type WholeMaterialProps = {
  *   - after the tap, the middle gap opens, making two pairs of 2 squares
  *     each — i.e., two halves
  *
- * The kid sees the equivalence physically: one whole is the same chocolate
- * as two halves stuck together. Tap = split. No drag, no choice — the
- * action IS the introduction. Streak / mastery doesn't apply here; one
- * confirmed split completes the beat and the lesson moves on to naming
- * the half.
+ * Labels frame the bar so the math is visible:
+ *   - "1" sits outside the tray on the left (this is one whole = 1)
+ *   - When split, three stacked-fraction labels appear inside the tray:
+ *     one on the outer-left, one in the middle gap, one on the outer-right.
+ *     Each half is flanked on both sides by a "1⁄2" — the visitor sees
+ *     half + half = 1.
+ *
+ * Toggle behaviour: tapping the bar always toggles `split`. The first
+ * tap that flips it to true completes the beat and the lesson advances;
+ * subsequent taps let the kid snap the chocolate back together and pop
+ * it apart again to explore. The state machine never un-marks a done
+ * beat, so the toggle is purely exploratory once mastered.
  */
 export function WholeMaterial({
   value,
@@ -39,8 +61,7 @@ export function WholeMaterial({
 
   const handleTap = (): void => {
     if (disabled) return;
-    if (split) return; // idempotent — extra taps are no-ops
-    onChange({ kind: 'whole', split: true });
+    onChange({ kind: 'whole', split: !split });
   };
 
   const status = split
@@ -49,31 +70,45 @@ export function WholeMaterial({
 
   return (
     <div className="whole-stage">
-      <button
-        type="button"
-        className={`whole-bar${split ? ' is-split' : ''}`}
-        aria-label="split the whole bar in half"
-        onClick={handleTap}
-        disabled={disabled}
-      >
-        {/* Two half-slabs, each made of 2 quarter-units stuck together. Before
-            the split they sit flush (gap: 0) so the four squares read as one
-            continuous whole. After the split, an inline gap opens between
-            them. */}
-        <span className="whole-half">
-          <ChocolatePiece size={UNIT_PX} width={UNIT_PX} alt="" />
-          <ChocolatePiece size={UNIT_PX} width={UNIT_PX} alt="" />
-        </span>
+      <div className="whole-row">
+        {/* "1" labels the whole bar BEFORE the split — once the kid pops
+            it apart, the bar is no longer one whole and the "1" hides.
+            Kept mounted with a CSS opacity toggle so the layout stays
+            put across the toggle, then visually-hidden via aria-hidden. */}
         <span
-          className="whole-gap"
+          className={`whole-label-big${split ? ' is-hidden' : ''}`}
           aria-hidden
-          style={{ width: split ? SPLIT_GAP_PX : 0 }}
-        />
-        <span className="whole-half">
-          <ChocolatePiece size={UNIT_PX} width={UNIT_PX} alt="" />
-          <ChocolatePiece size={UNIT_PX} width={UNIT_PX} alt="" />
+        >
+          1
         </span>
-      </button>
+        <button
+          type="button"
+          className={`whole-bar${split ? ' is-split' : ''}`}
+          aria-label={
+            split
+              ? 'snap the two halves back together'
+              : 'split the whole bar in half'
+          }
+          onClick={handleTap}
+          disabled={disabled}
+        >
+          {/* Flex layout: [frac] [half] [half] [frac]. The outer two
+              fractions flank the pair of halves so the kid sees
+              "1⁄2 + 1⁄2 = (the whole that just split)". The fractions
+              collapse to zero width when not split so the four quarters
+              read as one continuous chocolate rectangle. */}
+          <HalfFrac />
+          <span className="whole-half">
+            <ChocolatePiece size={UNIT_PX} width={UNIT_PX} alt="" seamless />
+            <ChocolatePiece size={UNIT_PX} width={UNIT_PX} alt="" seamless />
+          </span>
+          <span className="whole-half">
+            <ChocolatePiece size={UNIT_PX} width={UNIT_PX} alt="" seamless />
+            <ChocolatePiece size={UNIT_PX} width={UNIT_PX} alt="" seamless />
+          </span>
+          <HalfFrac />
+        </button>
+      </div>
       <div
         className={`whole-status${split ? ' is-success' : ''}`}
         role="status"

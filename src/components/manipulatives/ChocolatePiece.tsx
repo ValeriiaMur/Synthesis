@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import type { CSSProperties } from 'react';
+import Image from "next/image";
+import type { CSSProperties } from "react";
 
 export type ChocolatePieceProps = {
   /** Square edge length in CSS pixels. Acts as the height; width falls
@@ -16,6 +16,12 @@ export type ChocolatePieceProps = {
   readonly placed?: boolean;
   /** Pass an empty string to mark decorative; alt is auto-hidden then. */
   readonly alt?: string;
+  /** Drop the per-piece border-radius and drop-shadow so the piece can be
+   *  laid flush against neighbours and read as part of a larger bar. The
+   *  outer container is then responsible for the bar-level shape and
+   *  shadow. Used by WholeMaterial to make 4 quarter-squares merge into
+   *  one continuous chocolate rectangle. */
+  readonly seamless?: boolean;
   /** Extra style overrides (e.g. animation on appear). Merged last. */
   readonly style?: CSSProperties;
 };
@@ -35,37 +41,42 @@ export function ChocolatePiece({
   size,
   width,
   placed = false,
-  alt = '',
+  alt = "",
+  seamless = false,
   style,
 }: ChocolatePieceProps) {
   const w = width ?? size;
-  const isDecorative = alt === '';
+  const isDecorative = alt === "";
+  const radius = seamless ? 0 : Math.max(6, Math.round(size * 0.14));
+  const shadow = seamless
+    ? "none"
+    : placed
+      ? "0 0 0 2px rgba(95,216,151,0.55), 0 10px 20px -8px rgba(0,0,0,0.55)"
+      : "0 10px 20px -8px rgba(0,0,0,0.5)";
   return (
     <span
       aria-hidden={isDecorative || undefined}
       style={{
-        display: 'inline-block',
+        display: "inline-block",
         width: w,
         height: size,
-        position: 'relative',
-        borderRadius: Math.max(6, Math.round(size * 0.14)),
-        overflow: 'hidden',
-        boxShadow: placed
-          ? '0 0 0 2px rgba(95,216,151,0.55), 0 10px 20px -8px rgba(0,0,0,0.55)'
-          : '0 10px 20px -8px rgba(0,0,0,0.5)',
-        transition: 'box-shadow .2s ease, transform .2s ease',
+        position: "relative",
+        borderRadius: radius,
+        overflow: "hidden",
+        boxShadow: shadow,
+        transition: "box-shadow .2s ease, transform .2s ease",
         ...style,
       }}
     >
       <Image
-        src="/images/chocolate.png"
+        src="/images/chocolate.svg"
         alt={alt}
         fill
         sizes={`${Math.max(w, size)}px`}
         style={{
-          objectFit: 'cover',
-          pointerEvents: 'none',
-          userSelect: 'none',
+          objectFit: "cover",
+          pointerEvents: "none",
+          userSelect: "none",
         }}
       />
     </span>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { playSampleVoice, SAMPLE_GREETING } from '@/lib/voice/playSample';
+import { getAmbientPlayer } from '@/lib/audio/ambientPlayer';
 
 export type NamePromptProps = {
   readonly onSubmit: (name: string) => void;
@@ -15,11 +15,13 @@ type AudioGateState =
   | { readonly kind: 'confirmed' };
 
 /**
- * Cosmos-styled modal that asks the learner for their name before the lesson
- * begins. Gated by a sound check: the learner plays a short greeting from
- * Ari and confirms they can hear it. The user gesture also satisfies the
- * browser's autoplay policy, so the lesson's in-flight voice can play
- * without further interaction.
+ * Neutral pre-lesson modal: collects the learner's name and verifies that
+ * audio works. The sound check unmutes the ambient pad — that user
+ * gesture also satisfies the browser's autoplay policy, so the lesson's
+ * in-flight TTS narration can play later without further interaction.
+ *
+ * Copy is intentionally generic — no narrator name, no "story". The
+ * lesson teaches via the material itself; the name is just for greeting.
  */
 export function NamePrompt({ onSubmit }: NamePromptProps) {
   const [name, setName] = useState('');
@@ -38,13 +40,24 @@ export function NamePrompt({ onSubmit }: NamePromptProps) {
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!canSubmit) return;
+    // Pause the ambient pad on submit so it doesn't compete with the
+    // lesson's per-beat narration. The user's mute preference stays
+    // intact — the player will resume on the home page next time they
+    // visit.
+    try {
+      const player = getAmbientPlayer();
+      void player.setMuted(true);
+    } catch {
+      // ignore — submit shouldn't fail because of audio cleanup
+    }
     onSubmit(trimmed);
   };
 
   const handlePlay = async () => {
     setAudio({ kind: 'playing' });
     try {
-      await playSampleVoice(SAMPLE_GREETING);
+      const player = getAmbientPlayer();
+      await player.setMuted(false);
       setAudio({ kind: 'played' });
     } catch {
       setAudio({ kind: 'error' });
@@ -68,11 +81,9 @@ export function NamePrompt({ onSubmit }: NamePromptProps) {
           <span className="dot" aria-hidden />
           before we begin
         </div>
-        <h2 id="name-prompt-title">
-          What should <span className="acc-b">Ari</span> call you?
-        </h2>
+        <h2 id="name-prompt-title">What should we call you?</h2>
         <p className="name-prompt-sub">
-          Your name will show up in the story and in the chat with Ari.
+          Just a friendly tag so we can greet you during the lesson.
         </p>
 
         <div className="name-prompt-audio-check" aria-live="polite">

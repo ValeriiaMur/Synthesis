@@ -24,45 +24,75 @@ export function regionCount(fractions: readonly FractionKind[]): number {
   return 5;
 }
 
+/** Index of the half-tile in the mixed layout — centered between the
+ *  quarters (e.g. q q ½ q q for 5 pieces) so the half visually anchors
+ *  the middle of the mat. */
+export function halfIndex(fractions: readonly FractionKind[]): number {
+  return Math.floor(regionCount(fractions) / 2);
+}
+
 export function regionKind(
   idx: number,
   fractions: readonly FractionKind[],
 ): FractionKind {
   if (fractions.length === 1) return fractions[0];
-  // Mixed: index 0 is the half-tile, 1..4 are the quarter-tiles.
-  return idx === 0 ? 'half' : 'quarter';
+  // Mixed: the half-tile sits in the MIDDLE; every other tile is a quarter.
+  return idx === halfIndex(fractions) ? 'half' : 'quarter';
 }
 
 /**
  * Decide which fraction the next prompt asks for.
  *
- * Single-fraction lessons (L1, L2) always prompt the same kind. Mixed lessons
- * alternate strictly from the previous prompt — predictable over a 4-tap run
- * and trivially testable without random injection.
+ * Single-fraction lessons (L1, L2) always prompt the same kind. Mixed
+ * lessons (L3) prompt for the kind that still has untapped pieces on the
+ * tray, biasing toward `half` first so the kid meets the half before
+ * working through the quarters. This naturally keeps the prompt useful:
+ * once a kind has been fully tapped, the prompt switches to whatever's
+ * still untapped.
  */
 export function pickPromptKind(
   fractions: readonly FractionKind[],
-  prev: FractionKind | undefined,
+  tapped: readonly number[] = [],
 ): FractionKind {
   if (fractions.length === 1) return fractions[0];
-  if (!prev) return 'half';
-  return prev === 'half' ? 'quarter' : 'half';
+  // Prompt for the half until its (centered) tile has been tapped, then
+  // switch to the quarters.
+  const halfUntapped = !new Set(tapped).has(halfIndex(fractions));
+  if (halfUntapped) return 'half';
+  return 'quarter';
 }
 
+/** Result of evaluating one tap on a piece.
+ *  - `accepted` — the tap matched the prompted kind AND the piece hadn't
+ *    been tapped already. The caller should advance the `tapped` array.
+ *  - `nextTapped` — the new tapped-indices array (with the new index
+ *    pushed when accepted, unchanged otherwise). */
 export type TapResult = {
   readonly accepted: boolean;
-  readonly nextStreak: number;
+  readonly nextTapped: readonly number[];
 };
 
+/**
+ * Evaluate a tap on a region.
+ *
+ * Accepts only when (a) the tapped kind matches the prompt AND (b) the
+ * tapped index isn't already in the `tapped` set. Wrong-kind taps and
+ * repeat-tap-of-the-same-piece are both silently rejected — the kid is
+ * exploring every distinct piece on the tray once.
+ */
 export function evalTap(
   promptKind: FractionKind,
   tappedKind: FractionKind,
-  prevStreak: number,
+  tappedIdx: number,
+  prevTapped: readonly number[],
 ): TapResult {
-  if (promptKind === tappedKind) {
-    return { accepted: true, nextStreak: prevStreak + 1 };
+  if (promptKind !== tappedKind) {
+    return { accepted: false, nextTapped: prevTapped };
   }
-  return { accepted: false, nextStreak: prevStreak };
+  if (prevTapped.includes(tappedIdx)) {
+    return { accepted: false, nextTapped: prevTapped };
+  }
+  return { accepted: true, nextTapped: [...prevTapped, tappedIdx] };
 }
 
 /**

@@ -6,35 +6,34 @@ const namingHalfBeat: Beat = {
   id: 'name_half',
   phase: 'period_1_introduce',
   kindLabel: 'one half',
-  prose: 'Tap one half.',
-  manipulative: { kind: 'naming', fractions: ['half'], masteryStreak: 3 },
+  prose: 'Tap each half.',
+  manipulative: { kind: 'naming', fractions: ['half'] },
 };
 
 const namingMixBeat: Beat = {
   id: 'mix_half_quarter',
   phase: 'period_2_recognize',
   kindLabel: 'halves and quarters',
-  prose: 'Tap the half. Then tap the quarter.',
+  prose: 'Tap the half. Then tap each quarter.',
   manipulative: {
     kind: 'naming',
     fractions: ['half', 'quarter'],
-    masteryStreak: 4,
   },
 };
 
 const equivBeat: Beat = {
   id: 'equiv_half_two_quarters',
   phase: 'period_3_recall',
-  kindLabel: 'half = two quarters',
-  prose: 'Place quarters on the half until it fits exactly.',
-  manipulative: { kind: 'equivalence', targetCount: 2 },
+  kindLabel: 'whole = four quarters',
+  prose: 'Place four quarters to fill the whole.',
+  manipulative: { kind: 'equivalence', targetCount: 4 },
 };
 
 const paperBeat: Beat = {
   id: 'equiv_paper_check',
   phase: 'period_3_recall',
   kindLabel: 'check: half = two quarters',
-  prose: 'Fold the paper. Then fold again.',
+  prose: 'Notice what we just saw: a whole can be named as halves and as quarters. Now show that same idea by folding the paper.',
   manipulative: { kind: 'paper', targetFolds: ['horizontal', 'vertical'] },
 };
 
@@ -58,36 +57,30 @@ describe('isBeatComplete — whole intro', () => {
   });
   it('is false when state kind does not match', () => {
     expect(
-      isBeatComplete(wholeBeat, { kind: 'naming', streak: 5 }),
+      isBeatComplete(wholeBeat, { kind: 'naming', tapped: [0, 1] }),
     ).toBe(false);
   });
 });
 
-describe('isBeatComplete — naming', () => {
-  it('is true when streak meets the mastery threshold', () => {
-    expect(
-      isBeatComplete(namingHalfBeat, { kind: 'naming', streak: 3 }),
-    ).toBe(true);
+describe('isBeatComplete — naming (tap-each-piece)', () => {
+  it('L1 halves-only: false until BOTH halves are tapped, true at 2 uniques', () => {
+    expect(isBeatComplete(namingHalfBeat, { kind: 'naming', tapped: [] })).toBe(false);
+    expect(isBeatComplete(namingHalfBeat, { kind: 'naming', tapped: [0] })).toBe(false);
+    expect(isBeatComplete(namingHalfBeat, { kind: 'naming', tapped: [0, 1] })).toBe(true);
   });
 
-  it('is true once streak exceeds the threshold', () => {
+  it('L3 mixed: needs all 5 pieces tapped (1 half + 4 quarters)', () => {
     expect(
-      isBeatComplete(namingHalfBeat, { kind: 'naming', streak: 5 }),
-    ).toBe(true);
-  });
-
-  it('is false below the threshold', () => {
-    expect(
-      isBeatComplete(namingHalfBeat, { kind: 'naming', streak: 2 }),
-    ).toBe(false);
-  });
-
-  it('respects a custom streak threshold per beat', () => {
-    expect(
-      isBeatComplete(namingMixBeat, { kind: 'naming', streak: 3 }),
+      isBeatComplete(namingMixBeat, {
+        kind: 'naming',
+        tapped: [0, 1, 2, 3],
+      }),
     ).toBe(false);
     expect(
-      isBeatComplete(namingMixBeat, { kind: 'naming', streak: 4 }),
+      isBeatComplete(namingMixBeat, {
+        kind: 'naming',
+        tapped: [0, 1, 2, 3, 4],
+      }),
     ).toBe(true);
   });
 
@@ -105,22 +98,22 @@ describe('isBeatComplete — naming', () => {
   });
 });
 
-describe('isBeatComplete — equivalence', () => {
+describe('isBeatComplete — equivalence (whole = 4 quarters)', () => {
   it('is true when placedCount hits the target', () => {
     expect(
-      isBeatComplete(equivBeat, { kind: 'equivalence', placedCount: 2 }),
+      isBeatComplete(equivBeat, { kind: 'equivalence', placedCount: 4 }),
     ).toBe(true);
   });
 
   it('is false short of the target', () => {
     expect(
-      isBeatComplete(equivBeat, { kind: 'equivalence', placedCount: 1 }),
+      isBeatComplete(equivBeat, { kind: 'equivalence', placedCount: 3 }),
     ).toBe(false);
   });
 
   it('is false when state kind does not match', () => {
     expect(
-      isBeatComplete(equivBeat, { kind: 'naming', streak: 2 }),
+      isBeatComplete(equivBeat, { kind: 'naming', tapped: [0, 1] }),
     ).toBe(false);
   });
 });

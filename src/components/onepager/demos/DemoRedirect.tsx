@@ -21,7 +21,7 @@ const RESPONSES: Readonly<Record<Mode, Response>> = {
   redirect: {
     tag: 'redirect',
     color: 'var(--green)',
-    text: "Let's look at the blocks. What if you stack two quarters on the half-space?",
+    text: "Let's look at the chocolate. What if you stack two quarters on the half-space?",
   },
 };
 

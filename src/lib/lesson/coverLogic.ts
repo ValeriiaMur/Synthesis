@@ -12,8 +12,10 @@
 
 export type CoverState = { readonly placedCount: number };
 
-/** "One half is the same as TWO quarters." */
-export const COVER_TARGET = 2;
+/** "One whole is the same as FOUR quarters." Lesson 05 fills a tray the
+ *  size of the whole; the legacy value of 2 (half = 2 quarters) is no
+ *  longer the default but the helpers still accept any target. */
+export const COVER_TARGET = 4;
 
 export type PlaceResult = {
   readonly accepted: boolean;
@@ -36,22 +38,27 @@ export function isCovered(state: CoverState, target = COVER_TARGET): boolean {
  * Period-3 control-of-error script: name what the kid sees on the mat at
  * each step, no praise.
  *
- *   0 placed → "the half is empty — tap a quarter to start covering it."
- *   1 placed → "one quarter on the half — one more to cover it."
- *   2 placed → "two quarters cover the half exactly — that's why ½ = 2/4."
+ * The wording adapts to the target. With target = 4 the lesson is about
+ * building the whole; with target = 2 it's the legacy half-cover.
  */
 export function coverStatusText(
   state: CoverState,
   target = COVER_TARGET,
 ): string {
+  const remaining = target - state.placedCount;
   if (state.placedCount <= 0) {
-    return 'the half is empty — tap a quarter to start covering it.';
+    return target === 4
+      ? 'the tray is empty — tap a quarter to start filling the whole.'
+      : 'the half is empty — tap a quarter to start covering it.';
   }
   if (state.placedCount < target) {
-    const remaining = target - state.placedCount;
-    return `one quarter on the half — ${
-      remaining === 1 ? 'one more to cover it.' : `${remaining} more to cover it.`
-    }`;
+    const noun = state.placedCount === 1 ? 'quarter' : 'quarters';
+    const more = remaining === 1 ? 'one more' : `${remaining} more`;
+    return target === 4
+      ? `${state.placedCount} ${noun} placed — ${more} to fill the whole.`
+      : `${state.placedCount} ${noun} on the half — ${more} to cover it.`;
   }
-  return 'two quarters cover the half exactly — that’s why ½ = 2/4.';
+  return target === 4
+    ? 'four quarters fill the whole exactly — that’s why 4 quarters = 1.'
+    : 'two quarters cover the half exactly — that’s why ½ = 2/4.';
 }

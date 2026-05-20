@@ -16,7 +16,7 @@ const baseInput: Omit<PersistedLessonState, 'schemaVersion' | 'lessonId'> = {
   activeIdx: 1,
   doneIds: ['name_half'],
   manipStates: {
-    name_half: { kind: 'naming', streak: 3 },
+    name_half: { kind: 'naming', tapped: [0, 1] },
   },
 };
 
@@ -37,7 +37,7 @@ describe('snapshotLesson + decodeLessonState round trip', () => {
     expect(decoded?.doneIds).toEqual(['name_half']);
     expect(decoded?.manipStates.name_half).toEqual({
       kind: 'naming',
-      streak: 3,
+      tapped: [0, 1],
     });
   });
 
@@ -109,7 +109,7 @@ describe('decodeLessonState — defensive parsing', () => {
       activeIdx: 0,
       doneIds: [],
       manipStates: {
-        name_half: { kind: 'naming' }, // missing streak
+        name_half: { kind: 'naming' }, // missing tapped + streak
       },
     });
     const decoded = decodeLessonState(raw, LESSON_ID);

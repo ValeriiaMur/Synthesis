@@ -19,11 +19,6 @@ export function Hero() {
           </h1>
           <p>
             A short lesson on equivalent fractions, taught the Montessori way.
-            The child handles a chocolate bar, a pizza, building blocks, and a
-            piece of paper — and sees{" "}
-            <span style={{ color: "var(--green)" }}>½</span> and{" "}
-            <span style={{ color: "var(--green)" }}>²⁄₄</span> are the same
-            amount, before anyone uses those words.
           </p>
           <div className="hero-actions">
             <Link className="btn-primary" href="/lesson">

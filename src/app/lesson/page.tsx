@@ -90,10 +90,15 @@ export default function LessonRoute() {
         onStartOver={() => {
           try {
             window.localStorage.removeItem(storageKey(lesson.id));
+            window.localStorage.removeItem(NAME_KEY);
           } catch {
             // ignore — start fresh in-memory anyway.
           }
           setResume({ kind: 'fresh' });
+          // Notify the name-store subscribers so the next render flips back
+          // to the NamePrompt branch (storage events don't fire in the same
+          // tab that wrote them).
+          window.dispatchEvent(new Event(NAME_EVENT));
         }}
       />
     );

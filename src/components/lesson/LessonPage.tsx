@@ -4,9 +4,9 @@ import { createRef, useMemo, type RefObject } from 'react';
 import type { Beat, BeatId, Lesson } from '@/lib/lesson/types';
 import { GridBg } from '@/components/space/GridBg';
 import { TopBar } from './TopBar';
-import { Intro } from './Intro';
 import { Outro } from './Outro';
 import { LessonBeatCell } from './LessonBeatCell';
+import { LessonTrail } from './LessonTrail';
 import type { PersistedLessonState } from '@/lib/lesson/lessonPersistence';
 import { useLessonStateMachine } from '@/lib/lesson/useLessonStateMachine';
 import { useLessonVoice } from '@/lib/lesson/useLessonVoice';
@@ -83,7 +83,10 @@ export function LessonPage({
       <div className="stage">
         <div className="notebook">
           <div className="notebook-inner">
-            <Intro />
+            <LessonTrail
+              total={beatCount}
+              allDone={machine.doneSet.size === beatCount}
+            />
 
             {beats.map((beat: Beat, idx: number) => (
               <LessonBeatCell

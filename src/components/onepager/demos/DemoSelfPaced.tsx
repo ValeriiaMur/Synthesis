@@ -13,14 +13,14 @@ export function DemoSelfPaced() {
         <FauxCell
           n="01"
           status={done1 ? 'done' : 'active'}
-          label="manipulative — chocolate bar"
+          label="chocolate — name one half"
         />
         <FauxCell
           n="02"
           status={done1 ? 'active' : 'locked'}
-          label="check — recall"
+          label="chocolate — name one quarter"
         />
-        <FauxCell n="03" status="locked" label="manipulative — pizza" />
+        <FauxCell n="03" status="locked" label="paper — fold it twice" />
         <FauxCell n="…" status="locked" label="and so on" />
       </div>
       <div
