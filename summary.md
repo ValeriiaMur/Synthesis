@@ -57,11 +57,13 @@ has two more audio layers, both muted by the single topbar toggle:
   baked via `scripts/bake-sfx.mts` (ElevenLabs Sound Effects API):
   `chocolateSnap`, `paperFold`, `wholeSplit`, `hammerBreak`. Missing files
   no-op silently.
-- **Spoken observational feedback** — `useSpokenFeedback` enqueues
-  milestone lines through the voice player (FIFO, throttled ~1.3s, never
-  interrupts the beat prose): naming feedback, the whole-split observation,
-  and the "four quarters fill the whole" line. Live `/api/tts` covers any
-  un-baked line.
+- **Per-block voice only** — the lesson speaks one thing per block: that
+  beat's prose, on entry/advance (`useLessonVoice` on mount, `advanceTo`
+  on advance), synced to the block becoming active. There are *no*
+  per-step spoken confirmations on taps — they were removed as clutter.
+  The one exception is the recall beat, whose "yes — that's a half" reveal
+  IS that block's voice (call-and-response); it still uses
+  `useSpokenFeedback` (a throttled, FIFO enqueue helper).
 
 No STT, no Conversational AI, no LLM in the lesson loop — per the presearch
 scope. (PostHog captures one `lesson_feedback` event from the Outro;

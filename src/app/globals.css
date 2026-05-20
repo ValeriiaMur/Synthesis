@@ -1607,25 +1607,48 @@ a,
   pointer-events: none;
 }
 
-/* The fraction labels overlaid on each quadrant once folded. */
+/* The fraction labels overlaid on the folded paper. The grid switches by
+   fold count: one row per half at 1 fold, a 2×2 of quarters at 2 folds. */
 .paper-quad-labels {
   position: absolute;
   inset: 0;
   pointer-events: none;
   display: grid;
+  z-index: 4;
+}
+/* Two halves, stacked top/bottom. After the (horizontal) fold the paper
+   occupies the TOP half of the square workspace and the bottom half is
+   empty — so label 1 lands on the paper, label 2 sits below it in the
+   empty space. Explicit absolute positioning (not grid auto-flow) so the
+   two ½'s can never end up side-by-side. */
+.paper-quad-labels[data-folds="1"] {
+  display: block;
+}
+.paper-quad-labels[data-folds="1"] .paper-quad-label {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 50%;
+}
+.paper-quad-labels[data-folds="1"] .paper-quad-label:nth-child(1) {
+  top: 0;
+}
+.paper-quad-labels[data-folds="1"] .paper-quad-label:nth-child(2) {
+  top: 50%;
+}
+.paper-quad-labels[data-folds="2"] {
+  /* Four quarters. */
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
-  z-index: 4;
 }
 .paper-quad-label {
   display: grid;
   place-items: center;
   font-family: var(--font-work-sans), "Work Sans", sans-serif;
   font-weight: 400;
-  opacity: 0.55;
-  transition:
-    opacity 0.35s ease,
-    transform 0.35s ease;
+  /* Every part is an equal share — every label is equally visible. */
+  opacity: 1;
+  transition: opacity 0.35s ease, transform 0.35s ease;
   font-variant-numeric: tabular-nums;
 }
 /* White fraction on a blue chip — reads on the cream paper AND on the

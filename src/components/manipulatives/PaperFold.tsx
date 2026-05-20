@@ -12,6 +12,7 @@ import {
 } from 'react';
 import type { PaperState } from '@/lib/lesson/types';
 import { Paper } from './paper/Paper';
+import { QuadLabels } from './paper/QuadLabels';
 import { WholeNumber } from './paper/WholeNumber';
 import { getSfxPlayer } from '@/lib/audio/sfxPlayer';
 
@@ -294,6 +295,12 @@ export function PaperFold({ value, onChange, disabled = false }: PaperFoldProps)
           dragProgress={dragProgress}
           dragDirection={dragDirection}
         />
+
+        {/* Fraction labels live OUTSIDE the 3D paper so they sit flat on
+            top of every part (a label inside the preserve-3d context gets
+            hidden behind a folded/lifted quadrant). Hidden mid-drag so
+            they don't fight the fold animation. */}
+        {!drag && <QuadLabels folds={folds} />}
 
         <WholeNumber visible={folds === 0 && dragProgress < 0.05} />
 

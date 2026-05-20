@@ -1,5 +1,4 @@
 import { Quad } from './Quad';
-import { QuadLabels } from './QuadLabels';
 
 export type PaperProps = {
   readonly folds: 0 | 1 | 2;
@@ -50,8 +49,6 @@ export function Paper({ folds, dragProgress, dragDirection }: PaperProps) {
       <Quad pos="tr" transform={transforms.tr} dragging={dragging} />
       <Quad pos="bl" transform={transforms.bl} dragging={dragging} />
       <Quad pos="br" transform={transforms.br} dragging={dragging} />
-
-      <QuadLabels folds={folds} />
     </div>
   );
 }

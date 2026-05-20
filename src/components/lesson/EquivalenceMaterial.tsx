@@ -23,7 +23,6 @@ import type { EquivalenceConfig, EquivalenceState } from '@/lib/lesson/types';
 import { coverStatusText, isCovered, placeQuarter } from '@/lib/lesson/coverLogic';
 import { ChocolatePiece } from '@/components/manipulatives/ChocolatePiece';
 import { getSfxPlayer } from '@/lib/audio/sfxPlayer';
-import { useSpokenFeedback } from '@/lib/lesson/useSpokenFeedback';
 
 /** Unit-based sizing — one quarter = one UNIT_PX square, four of them
  *  side-by-side make the whole bar (matches the WholeMaterial). */
@@ -86,18 +85,12 @@ export function EquivalenceMaterial({
     [],
   );
 
-  const speakFeedback = useSpokenFeedback();
-
   const handleTap = (): void => {
     if (disabled) return;
     getSfxPlayer().play('chocolateSnap');
     const result = placeQuarter({ placedCount: placed }, target);
     if (!result.accepted) return;
-    const next = result.newState.placedCount;
-    onChange({ kind: 'equivalence', placedCount: next });
-    if (next >= target) {
-      speakFeedback(coverStatusText({ placedCount: next }, target));
-    }
+    onChange({ kind: 'equivalence', placedCount: result.newState.placedCount });
   };
 
   const breakIt = useCallback(() => {
