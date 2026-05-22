@@ -132,7 +132,7 @@ src/
     space/                   # Stars, GridBg, Doodles (+ 9 doodle icons)
     manipulatives/
       ChocolatePiece.tsx     # shared chocolate-image visual (PNG, used by all chocolate beats)
-      PaperFold.tsx          # L5 transfer check: drag a corner to fold; 2 folds = done
+      PaperFold.tsx          # L5 transfer check — render-only; state via usePaperFold, math via paperFoldLogic
       paper/                 # Paper, Quad, QuadLabels, PaperFrac, PaperStars, WholeNumber
     lesson/
       LessonPage.tsx         # composition only, wires the hooks below
@@ -140,7 +140,8 @@ src/
       ManipulativeSlot.tsx   # dispatch by manipulative.kind → Whole / Naming / Equivalence / PaperFold
       WholeMaterial.tsx      # Beat 0 — one whole bar, tap to split it in half
       NamingMaterial.tsx     # L1–L3 tap-to-name (chocolate bar / mixed mat)
-      EquivalenceMaterial.tsx# L4 tap-to-cover (half-frame + slots + chocolate pile)
+      EquivalenceMaterial.tsx# L4 drag-to-fill — render-only; state via useEquivalenceMaterial
+      equivalence/           # TrayDroppable, QuarterDraggable, HammerDraggable (one component per file)
       NamePrompt.tsx         # autoplay-gesture capture; name stored in localStorage
       Cell, Prose
       Outro, ResumePrompt
@@ -158,10 +159,12 @@ src/
       completes.ts           # isBeatComplete — pure predicate over (Beat, ManipulativeState)
       namingLogic.ts         # regionCount/regionKind/pickPromptKind/evalTap/feedbackMessage (L1–L3)
       coverLogic.ts          # placeQuarter/isCovered/coverStatusText (L4)
-      paperLogic.ts          # nextFoldAxis/applyFold/isProven (L5)
+      paperFoldLogic.ts      # PaperFold pure transforms — specFor/cornerStyleFor/dragProgressFor/foldHint (L5)
       lessonPersistence.ts   # localStorage snapshot + isManipulativeState guard (schema v7)
       phaseLabel.ts          # LessonPhase → "P1 · introduce" label
       useLessonStateMachine.ts  # state + handleManip + advanceTo (no MC paths)
+      usePaperFold.ts        # PaperFold stateful shell — fold state, pointer drag, keyboard, SFX
+      useEquivalenceMaterial.ts # EquivalenceMaterial shell — place/break, dnd sensors, drop routing
       useLessonVoice.ts      # speakAri + mute + mount-time voice + resume scroll
       useLessonPersistence.ts   # snapshot effect + beforeunload backstop
       stripMarkup.ts, titleCaseName.ts
@@ -202,11 +205,11 @@ Each manipulative also has its own pure-logic module — they're not part
 of `completes.ts` but they're the same shape (synchronous, no fetch, no
 React imports, unit-tested in isolation):
 
-| Module            | Lessons | Exports                                                |
-| ----------------- | ------- | ------------------------------------------------------ |
-| `namingLogic.ts`  | L1–L3   | `regionCount`, `regionKind`, `pickPromptKind`, `evalTap` |
-| `coverLogic.ts`   | L4      | `placeQuarter`, `isCovered`                            |
-| `paperLogic.ts`   | L5      | `nextFoldAxis`, `applyFold`, `isProven`                |
+| Module               | Lessons | Exports                                                |
+| -------------------- | ------- | ------------------------------------------------------ |
+| `namingLogic.ts`     | L1–L3   | `regionCount`, `regionKind`, `pickPromptKind`, `evalTap` |
+| `coverLogic.ts`      | L4      | `placeQuarter`, `isCovered`                            |
+| `paperFoldLogic.ts`  | L5      | `specFor`, `cornerStyleFor`, `dragProgressFor`, `foldHint` |
 
 Wrong actions (tapping the wrong region in NamingMaterial, dropping
 extra quarters once the half is covered) are *silently rejected* by these
@@ -454,6 +457,10 @@ state)`:
 1. Update `manipStates[beat.id]`.
 2. Ask `isBeatComplete(beat, state)`.
 3. If complete and not already done, mark done and `advanceTo(idx + 1)`.
+   The "already done" test reads `doneSet` from the render closure
+   synchronously — *not* a flag flipped inside the `setDoneSet` updater
+   (React runs that updater on the next render, so the flag would still be
+   stale at the guard and a re-completed beat would re-advance / re-speak).
 
 **On advance:** flip `activeIdx`, add the next beat to `unlockedBanners`,
 speak the next beat's prose, scroll the new cell into view 250ms after
@@ -471,10 +478,13 @@ the flip. All synchronous — no fetch, no race.
   `{ kind:'paper', folds: readonly ('horizontal'|'vertical')[] }` on each
   successful fold; capped at two folds.
 
-Each component holds its own UI state (lift animation, prompt-cycling,
-fold pointer math, `@dnd-kit/core` drag in `EquivalenceMaterial`'s
-hammer) but the only fact it pushes upward is the manipulative-kind
-state. The state machine doesn't know or care how the fact was produced.
+Each material owns its own UI state (lift animation, prompt-cycling,
+`@dnd-kit/core` drag in `EquivalenceMaterial`'s hammer) but the only fact
+it pushes upward is the manipulative-kind state. The state machine doesn't
+know or care how the fact was produced. `PaperFold` is the cleanest
+example of the target shape: the component only renders, its pointer-drag
+state lives in `usePaperFold`, and the fold math is pure functions in
+`paperFoldLogic`.
 
 **Persistence (`SCHEMA_VERSION = 7`).** The manipulative states above all
 serialize to plain JSON. `isManipulativeState` validates kind + field
@@ -531,7 +541,7 @@ identity doesn't re-fire the publish effect.
   logic helpers; right taps animate the material. Adult-voice "look
   again" copy was deleted with `HintBubble` / `CelebrationBubble`.
 - **Tests for logic, not pixels.** Every pure helper has unit tests
-  (`namingLogic`, `coverLogic`, `paperLogic`, `completes`). Material
+  (`namingLogic`, `coverLogic`, `paperFoldLogic`, `completes`). Material
   components have behavior tests (tap → streak, tap → placedCount, fold
   → folds array) but not visual-snapshot tests.
 - **Stable-ref onChange in every manipulative.** Parents pass a fresh

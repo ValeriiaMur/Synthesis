@@ -51,12 +51,14 @@ describe('voicePlayer', () => {
   });
 
   it('plays multiple utterances sequentially in enqueue order', async () => {
-    const { deps, play } = makeDeps();
     const order: string[] = [];
-    deps.play = vi.fn().mockImplementation(async (b: Blob) => {
-      order.push(await b.text());
-      await new Promise<void>((r) => setTimeout(r, 5));
-    });
+    const orderingPlay = vi
+      .fn<VoicePlayerDeps['play']>()
+      .mockImplementation(async (b) => {
+        order.push(await b.text());
+        await new Promise<void>((r) => setTimeout(r, 5));
+      });
+    const { deps, play } = makeDeps({ play: orderingPlay });
     const player = createVoicePlayer(deps);
 
     player.speak('one');
@@ -66,7 +68,7 @@ describe('voicePlayer', () => {
     await new Promise<void>((r) => setTimeout(r, 50));
 
     expect(order).toEqual(['one', 'two', 'three']);
-    expect(play).not.toHaveBeenCalled(); // overwritten
+    expect(play).not.toHaveBeenCalled(); // default mock overridden by orderingPlay
   });
 
   it('does not fetch or play when muted', async () => {
@@ -137,10 +139,12 @@ describe('voicePlayer', () => {
   });
 
   it('stop() clears the queue so pending utterances do not play', async () => {
-    const { deps, play } = makeDeps();
-    deps.play = vi.fn().mockImplementation(async () => {
-      await new Promise<void>((r) => setTimeout(r, 5));
-    });
+    const slowPlay = vi
+      .fn<VoicePlayerDeps['play']>()
+      .mockImplementation(async () => {
+        await new Promise<void>((r) => setTimeout(r, 5));
+      });
+    const { deps } = makeDeps({ play: slowPlay });
     const player = createVoicePlayer(deps);
 
     player.speak('one');
@@ -149,17 +153,16 @@ describe('voicePlayer', () => {
 
     await new Promise<void>((r) => setTimeout(r, 30));
 
-    expect(play.mock.calls.length).toBeLessThanOrEqual(1);
+    expect(slowPlay.mock.calls.length).toBeLessThanOrEqual(1);
   });
 
   it('stop() aborts the in-flight play so the audio cuts mid-line', async () => {
     // Real-world: kid is on lesson, Ari is mid-sentence, kid clicks back to
     // home. The audio should cut. Voice is page-bound: leaving the lesson
     // calls voice.stop(), which now also aborts the current play().
-    const { deps } = makeDeps();
     let abortedDuringPlay = false;
-    deps.play = vi.fn(
-      async (_blob: Blob, opts?: { signal?: AbortSignal }) => {
+    const abortablePlay = vi.fn<VoicePlayerDeps['play']>(
+      async (_blob, opts) => {
         await new Promise<void>((resolve) => {
           if (opts?.signal?.aborted) {
             abortedDuringPlay = true;
@@ -174,6 +177,7 @@ describe('voicePlayer', () => {
         });
       },
     );
+    const { deps } = makeDeps({ play: abortablePlay });
     const player = createVoicePlayer(deps);
 
     player.speak('a long sentence');
@@ -188,11 +192,11 @@ describe('voicePlayer', () => {
   });
 
   it('swallows fetch errors and continues with the next utterance', async () => {
-    const { deps, play } = makeDeps();
-    deps.fetchAudio = vi
-      .fn()
+    const failingFetch = vi
+      .fn<VoicePlayerDeps['fetchAudio']>()
       .mockRejectedValueOnce(new Error('boom'))
       .mockResolvedValueOnce(new Blob(['ok']));
+    const { deps, play } = makeDeps({ fetchAudio: failingFetch });
     const player = createVoicePlayer(deps);
 
     player.speak('broken');

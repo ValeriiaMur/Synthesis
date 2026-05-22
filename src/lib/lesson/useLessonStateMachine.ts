@@ -63,22 +63,24 @@ export function useLessonStateMachine({
       setManipStates((m) => ({ ...m, [beat.id]: state }));
       if (!isBeatComplete(beat, state)) return;
 
-      let wasAlreadyDone = false;
+      // Read the *current* done set synchronously. A prior version flipped a
+      // flag inside the setDoneSet updater and checked it right after — but
+      // React runs that updater during the next render, so the flag was still
+      // false here and a re-completed beat would re-advance (and re-speak the
+      // next prompt). Reading `doneSet` from the render closure avoids that.
+      if (doneSet.has(beat.id)) return;
+
       setDoneSet((s) => {
-        if (s.has(beat.id)) {
-          wasAlreadyDone = true;
-          return s;
-        }
+        if (s.has(beat.id)) return s;
         const ns = new Set(s);
         ns.add(beat.id);
         return ns;
       });
 
-      if (wasAlreadyDone) return;
       const next = idx + 1;
       if (next < beatCount) advanceTo(next);
     },
-    [advanceTo, beats, beatCount],
+    [advanceTo, beats, beatCount, doneSet],
   );
 
   return { activeIdx, doneSet, manipStates, handleManip };
